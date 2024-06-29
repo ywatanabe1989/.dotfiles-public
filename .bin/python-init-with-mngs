@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+# Script created on: 2024-06-26 10:39:56
+# Script path: /home/ywatanabe/.dotfiles/.bin/python-init.sh
+
+python-init-with-mngs() {
+    if [ $# -eq 0 ]; then
+        VERSION=$(python -V 2>&1 | cut -d ' ' -f 2 | cut -d '.' -f 1-2)
+        python_bin=python
+    else
+        VERSION=$1
+        python_bin=python$VERSION
+    fi
+
+    read -p "Python version is $VERSION, is it okay to proceed? Y/n " response
+    if [[ "$response" =~ ^[Nn]$ ]]; then
+        echo "Aborted."
+        return 1
+    fi
+
+    # env
+    $python_bin -m venv env-$VERSION && source ./env-$VERSION/bin/activate
+    ln -s env-$VERSION env
+
+    # pip
+    pip install -U pip
+
+    # requirements.txt
+    if [[ -f requirements.txt ]]; then
+        pip install -r requirements.txt
+    fi
+
+    # mngs
+    mngs_repo_path=$HOME/proj/mngs_repo
+    if [[ -d $mngs_repo_path ]]; then
+        pip install -Ue $mngs_repo_path
+    else
+        mkdir -p $HOME/proj/
+        git clone git@github.com:ywatanabe1989/mngs.git $mngs_repo_path
+        ORIG_DIR=$(pwd)
+        cd $mngs_repo_path
+        git checkout develop
+        cd $ORIG_DIR
+        python -m pip install -Ue $mngs_repo_path
+    fi
+}
+
+python-init-with-mngs "$@"
+
+# EOF

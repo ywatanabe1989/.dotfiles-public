@@ -1,0 +1,17 @@
+*old*
+**/*old*
+
+.old
+**/.old
+
+*.log
+**/*.log
+
+**/*_back
+
+data/*
+
+**RUNNING**
+**FINISHED**
+**/RUNNING
+**/FINISHED

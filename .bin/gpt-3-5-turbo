@@ -1,0 +1,22 @@
+#!/bin/bash
+
+prompt="$@"
+
+model="gpt-3.5-turbo"
+api_key=$OPENAI_API_KEY
+
+echo -e "\n----------------------------------------\n"
+python -c "
+from mngs.ai import GenAI
+import warnings
+
+with warnings.catch_warnings():
+     warnings.simplefilter(\"ignore\")
+     model = GenAI(model=\"$model\",
+       api_key=\"$api_key\",
+         stream=True)
+
+model(\"\"\"$prompt\"\"\")"
+echo -e "\n\n----------------------------------------\n"
+
+# EOF

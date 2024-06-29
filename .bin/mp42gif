@@ -1,0 +1,70 @@
+#!/usr/bin/env bash
+# Script created on: 2024-06-29 12:28:25
+# Script path: /home/ywatanabe/.dotfiles/.bin/mp42gif.sh
+
+################################################################################
+# Argument Parser
+################################################################################
+usage() {
+    echo "Usage: $0 -i INPUT_FILE -o OUTPUT_FILE [-f FPS] [-s SCALE] [-h]"
+    echo "  -i INPUT_FILE        Input MP4 file"
+    echo "  -o OUTPUT_FILE       Output GIF file"
+    echo "  -f FPS               Frames per second (optional, default: 10)"
+    echo "  -s SCALE             Width of the output GIF (optional, default: 320)"
+    echo "  -h                   Display this help message"
+    exit 1
+}
+
+FPS=10
+SCALE=320
+
+while getopts "i:o:f:s:h" opt; do
+    case $opt in
+        i) INPUT_FILE=$OPTARG ;;
+        o) OUTPUT_FILE=$OPTARG ;;
+        f) FPS=$OPTARG ;;
+        s) SCALE=$OPTARG ;;
+        h) usage ;;
+        *) usage ;;
+    esac
+done
+
+if [ -z "$INPUT_FILE" ] || [ -z "$OUTPUT_FILE" ]; then
+    usage
+fi
+
+################################################################################
+
+# Global Parameters
+LOG_PATH="$0".log
+
+################################################################################
+# Main
+################################################################################
+
+# Functions
+mp4_to_gif() {
+    ffmpeg -i "$1" -vf "fps=$2,scale=$3:-1:flags=lanczos" -gifflags +transdiff -y "$4"
+}
+
+main() {
+    # Opening
+    echo -e "$0 starts."
+
+    # Main
+    echo "Converting $INPUT_FILE to $OUTPUT_FILE"
+    echo "FPS: $FPS, Scale: $SCALE"
+    mp4_to_gif "$INPUT_FILE" "$FPS" "$SCALE" "$OUTPUT_FILE"
+
+    # Closing
+    echo -e "$0 ends"
+}
+
+################################################################################
+
+touch $LOG_PATH
+main | tee $LOG_PATH
+echo -e "
+Logged to: $LOG_PATH"
+
+# EOF

@@ -1,0 +1,38 @@
+#################################################################
+## Gitignore Template
+#################################################################
+# Secret files
+*secrets*
+**/*secrets*
+
+## Large files
+*.mat
+*.npy
+*.pkl
+*.pdf
+*.csv
+*.mp4
+*.tiff
+*.wav
+*.png
+*.pth
+
+## for development
+*.old*
+*old*
+.log
+
+## data
+data/*
+
+
+# singularity
+singularity
+
+**RUNNING**
+**FINISHED**
+
+
+## for convenience
+*.old*
+*old*

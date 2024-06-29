@@ -1,0 +1,29 @@
+#!/env/bin/bash
+
+install-RAID0-ssd() {
+    read -p "Your data will be deleted. Is this really okay? (y/n) " confirm
+    [[ $confirm != "y" ]] && exit 1
+
+    sudo yum install mdadm -y
+
+    # /dev/nvme1n1
+    # /dev/nvme2n1
+    # /dev/nvme3n1
+    # /dev/nvme4n1
+
+    sudo mdadm -C /dev/md0 -l0 -n4 -f /dev/nvme[1234]n1
+    sudo mdadm -D /dev/md0
+    sudo mkfs.ext4 -j /dev/md0
+
+    sudo mkdir -p /mnt/ssd
+    sudo mount /dev/md0 /mnt/ssd
+
+    sudo hdparm -t /dev/md0
+
+    # /ssh:ywatanabe@444|sudo::/etc/fstab
+    echo "/dev/md0 /mnt/ssd ext4 defaults 0 0" | sudo tee -a /etc/fstab
+
+    sudo mdadm --misc --stop /dev/md127
+}
+
+# EOF

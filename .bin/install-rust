@@ -1,0 +1,34 @@
+#!/bin/bash
+
+install-rust() {
+    echo "Installing Rust..."
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+
+    # Source the Rust environment
+    source $HOME/.cargo/env
+
+    # Verify Rust installation
+    if rustc --version; then
+        echo "Rust installed successfully."
+    else
+        echo "Rust installation failed. Please check the error messages above."
+        return 1
+    fi
+
+    # Set up environment variables for macOS if needed
+    if [[ "$(uname)" == "Darwin" ]]; then
+        export LDFLAGS="-L/usr/local/opt/openssl/lib"
+        export CPPFLAGS="-I/usr/local/opt/openssl/include"
+        echo "Set up environment variables for macOS."
+    fi
+
+    echo "Attempting to install tiktoken..."
+    if pip install tiktoken; then
+        echo "tiktoken installed successfully."
+    else
+        echo "Failed to install tiktoken. Trying with RUSTFLAGS..."
+        RUSTFLAGS="-C target-cpu=native" pip install tiktoken
+    fi
+}
+
+# EOF

@@ -1,0 +1,6 @@
+#!/bin/bash
+
+message="from $HOSTNAME `date`"
+~/env/bin/python -c "import mngs; mngs.gen.notify(message='$message')"
+
+# EOF

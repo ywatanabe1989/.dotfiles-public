@@ -1,0 +1,25 @@
+#!/bin/bash
+
+prompt="$@"
+
+model="gpt-4o"
+api_key=$OPENAI_API_KEY
+
+echo -e "\n----------------------------------------\n"
+$HOME/proj/env/bin/python -c "
+from mngs.ai import GenAI
+import os
+
+model=\"gpt-4o\"
+api_key=os.getenv(\"OPENAI_API_KEY\")
+
+
+model = GenAI(model=\"$model\",
+  api_key=\"$api_key\",
+  stream=True)
+
+model(\"\"\"$prompt\"\"\")
+"
+echo -e "\n\n----------------------------------------\n"
+
+# EOF

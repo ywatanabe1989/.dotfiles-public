@@ -1,0 +1,26 @@
+#!/bin/bash
+
+readonly MASTER='master'
+readonly MAIN='main'
+
+# Function to check if this is the first commit
+is_first_commit() {
+    # Check if there are any commits in the repository
+    if [ $(git rev-list --all --count) -lt 2 ]; then
+        return 0  # True, this is the first commit
+    else
+        return 1  # False, not the first commit
+    fi
+}
+
+while read local_ref local_sha1 remote_ref remote_sha1
+do
+    if [[ "${remote_ref##refs/heads/}" = $MASTER || "${remote_ref##refs/heads/}" = $MAIN ]]; then
+        if is_first_commit; then
+            echo -e "\033[0;32mAllowing first commit to be pushed to\033[m \033[1;34m${remote_ref##refs/heads/}\033[m \033[0;32mbranch\033[m"
+        else
+            echo -e "\033[0;32mDo not push to\033[m \033[1;34m${remote_ref##refs/heads/}\033[m \033[0;32mbranch\033[m"
+            exit 1
+        fi
+    fi
+done
