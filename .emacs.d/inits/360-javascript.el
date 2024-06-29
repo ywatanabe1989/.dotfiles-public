@@ -1,0 +1,12 @@
+(add-hook 'js-mode-hook
+          (lambda ()
+            (setq indent-tabs-mode nil)
+            (setq tab-width 4)
+            (highlight-indent-guides-mode t)
+            (flycheck-mode t)
+            (flycheck-pos-tip-mode nil)
+            (flycheck-posframe-mode t)
+            (define-key js-mode-map (kbd "C-c C-f") 'my/copy-current-path)
+            (add-hook 'before-save-hook 'delete-trailing-whitespace nil t)
+            (py/insert-template-if-new-file)
+          ))
