@@ -1,0 +1,19 @@
+#!/bin/bash
+
+prompt="$@"
+
+model="claude-3-5-sonnet-20240620"
+api_key=$CLAUDE_API_KEY
+
+echo -e "\n----------------------------------------\n"
+python -c "
+from mngs.ai import GenAI
+
+model = GenAI(model=\"$model\",
+  api_key=\"$api_key\",
+  stream=True)
+
+model(\"\"\"$prompt\"\"\")"
+echo -e "\n\n----------------------------------------\n"
+
+# EOF

@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# Script created on: 2024-06-27 15:58:44
+# Script path: /home/ywatanabe/.dotfiles/.bin/compile-tex
+
+copile-tex() {
+    PATH=$1
+    TEX_FILE="${PATH%.*}.tex"
+    PDF_FILE="${PATH%.*}"
+
+    pdflatex $PDF_FILE
+    bibtex $PDF_FILE
+    pdflatex $PDF_FILE
+    pdflatex $PDF_FILE
+
+    mkdir -p log
+    mv *.cpt *.log *.out *.spl *.tmp log
+}
+
+compile-tex "$@"
+
+# EOF

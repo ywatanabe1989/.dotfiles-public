@@ -1,0 +1,82 @@
+#!/usr/bin/env bash
+
+run-command() {
+    echo "Running: $1"
+    if ! eval "$1"; then
+        echo "Error executing: $1"
+        return 1
+    fi
+    return 0
+}
+
+nvidia-solve-conflicts() {
+    # Remove conflicting packages
+    dnf remove -y dkms-nvidia nvidia-kmod-common
+
+    # Clean DNF cache
+    dnf clean all
+
+    # Update system
+    dnf update -y
+
+    # Reinstall NVIDIA driver
+    dnf module reset -y nvidia-driver
+    dnf module install -y nvidia-driver:latest-dkms --allowerasing
+
+    # Rebuild kernel modules
+    dkms autoinstall
+
+    # Regenerate initramfs
+    dracut --force
+
+    # Reboot system
+    echo "Installation complete. Please reboot your system."
+}
+
+install-nvidia-driver() {
+    # Check if script is run as root
+    if [ "$(id -u)" != "0" ]; then
+        echo "This script must be run as root. Please use sudo."
+        exit 1
+    fi
+
+    # Update system
+    run-command "dnf upgrade --refresh -y" || return 1
+
+    # Check VGA controllers
+    run-command "lspci | grep -e VGA" || return 1
+
+    # Check Secure Boot state
+    run-command "mokutil --sb-state" || return 1
+
+    # Enable CRB repository
+    run-command "dnf config-manager --set-enabled crb" || return 1
+
+    # Install EPEL repositories
+    run-command "dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm https://dl.fedoraproject.org/pub/epel/epel-next-release-latest-9.noarch.rpm" || return 1
+
+    # Add NVIDIA CUDA repository
+    run-command "dnf config-manager --add-repo https://developer.download.nvidia.com/compute/cuda/repos/rhel9/\$(uname -i)/cuda-rhel9.repo" || return 1
+
+    # Install necessary packages
+    run-command "dnf install -y kernel-headers-\$(uname -r) kernel-devel-\$(uname -r) tar bzip2 make automake gcc gcc-c++ pciutils elfutils-libelf-devel libglvnd-opengl libglvnd-glx libglvnd-devel acpid pkgconfig dkms" || return 1
+
+    # Install NVIDIA driver module
+    run-command "dnf module install -y nvidia-driver:latest-dkms" || return 1
+
+    # List available NVIDIA driver modules
+    run-command "dnf module list nvidia-driver" || return 1
+
+    # Install specific NVIDIA driver version
+    run-command "dnf module install -y nvidia-driver:535-open" || return 1
+
+    echo "NVIDIA driver installation completed. Please reboot your system."
+    return 0
+}
+
+# Run the installation function
+if install-nvidia-driver; then
+    echo "Installation successful. Please reboot your system."
+else
+    echo "Installation failed. Please check the error messages above."
+fi

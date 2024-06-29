@@ -1,0 +1,59 @@
+#!/bin/bash
+
+source $HOME/.git-templates/hooks/functions/git-add-gitignore-template.sh
+
+# git-add-ignore-template() {
+#     local GITIGNORE_DEST="$PWD/.gitignore"
+#     local GITIGNORE_SRC_FILES=(
+#         "$HOME/.dotfiles/.git-templates/.gitignore-templates/Custom/Secrets.gitignore"
+#         "$HOME/.dotfiles/.git-templates/.gitignore-templates/Custom/LargeFiles.gitignore"
+#         "$HOME/.dotfiles/.git-templates/.gitignore-templates/Custom/Development.gitignore"
+#         "$HOME/.dotfiles/.git-templates/.gitignore-templates/Python.gitignore"
+#         "$HOME/.dotfiles/.git-templates/.gitignore-templates/Custom/Singularity.gitignore"
+#         "$HOME/.dotfiles/.git-templates/.gitignore-templates/TeX.gitignore"
+#         "$HOME/.dotfiles/.git-templates/.gitignore-templates/Global/Emacs.gitignore"
+#     )
+
+#     # Ensure .gitignore exists
+#     if [[ ! -f "$GITIGNORE_DEST" ]]; then
+#         touch "$GITIGNORE_DEST"
+#         echo ".gitignore file was created at $GITIGNORE_DEST."
+#     else
+#         echo ".gitignore file already exists at $GITIGNORE_DEST."
+#     fi
+
+#     # Add the templates
+#     for GITIGNORE_SRC in "${GITIGNORE_SRC_FILES[@]}"; do
+#         local TAG="### Source: $GITIGNORE_SRC ###"
+
+#         # Check if the tag already exists in the .gitignore
+#         if ! grep -qF "$TAG" "$GITIGNORE_DEST"; then
+#             echo -e "\n$TAG\n$(cat "$GITIGNORE_SRC")" >> "$GITIGNORE_DEST"
+#             echo "$GITIGNORE_SRC has been added."
+#         else
+#             echo "$GITIGNORE_SRC is already included. Skipped."
+#         fi
+#     done
+# }
+
+# copy_git_ignore_template() {
+#     # Copies a .gitignore file into the new Git repository after 'git init'
+#     local GITIGNORE_SRC="$HOME/.git-templates/.gitignore-template"
+#     local GITIGNORE_DEST="$PWD/.gitignore"
+
+#     # Only copy if .gitignore does not exist already
+#     if [[ ! -f "$GITIGNORE_DEST" ]]; then
+#         cp "$GITIGNORE_SRC" "$GITIGNORE_DEST"
+#         echo ".gitignore template copied."
+#     else
+#         echo ".gitignore already exists. No changes made."
+#     fi
+# }
+
+main() {
+    git-add-ignore-template
+}
+
+main
+
+# EOF

@@ -1,0 +1,5 @@
+#!/bin/bash
+
+python -c "import mngs; from pprint import pprint; pprint(mngs.res.get_specs())" | less
+
+# EOF

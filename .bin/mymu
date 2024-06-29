@@ -1,0 +1,96 @@
+#!/usr/bin/env bash
+
+# encrypt () {
+#     email="$1"
+#     pw="$2"
+#     tmp_file=/tmp/"$email".txt
+#     mkdir -p ~/.pw
+
+#     touch "$tmp_file"
+#     echo "$pw" > "$tmp_file"
+#     gpg2 --output ~/.pw/"$email".gpg --symmetric "$tmp_file"
+#     rm -f "$tmp_file"
+#     ls ~/.pw
+# }
+
+# mu-init() {
+#     rm -rf ~/.cache/mu
+#     rm -f ~/.mu/xapian/flintlock
+#     mu init \
+#       --maildir=~/Mail \
+#       --muhome=~/.mu \
+#       --my-address=wyusuuke@gmail.com \
+#       --my-address=wataning11@gmail.com \
+#       --my-address=ywata1989@gmail.com \
+#       --my-address=Yusuke.Watanabe@unimelb.edu.au \
+#       --my-address=ywatanabe@ywata-note-win
+#     mu index --muhome=~/.mu
+# }
+
+# mu-refresh() {
+#     cp -R ~/Mail ~/Mail_backup_$(date +%Y%m%d_%H%M%S)
+
+#     rm -rf ~/Mail/*
+
+#     mu index --cleanup
+#     mu index --rebuild
+
+
+#     for dd in all drafts inbox junk sent trash; do
+#         mkdir -p ~/Mail*/$dd
+#     done
+
+#     mu-init
+
+#     }
+
+# mu-check-corrupted-messages() {
+#    find ~/Maildir -type f -name '*' -print0 | xargs -0 file | grep -v "ASCII text"
+#    }
+
+mu-init() {
+    read -p "This will reinitialize mu. Are you sure? (y/n) " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]
+    then
+        rm -rf ~/.cache/mu
+        rm -f ~/.mu/xapian/flintlock
+        mu init \
+          --maildir=~/Mail \
+          --muhome=~/.mu \
+          --my-address=wyusuuke@gmail.com \
+          --my-address=wataning11@gmail.com \
+          --my-address=ywata1989@gmail.com \
+          --my-address=Yusuke.Watanabe@unimelb.edu.au \
+          --my-address=ywatanabe@ywata-note-win || { echo "mu init failed"; return 1; }
+
+        for dd in all drafts inbox junk sent trash; do
+            mkdir -p ~/Mail*/$dd
+        done
+
+        mu index --muhome=~/.mu || { echo "mu index failed"; return 1; }
+    fi
+}
+
+mu-refresh() {
+    read -p "This will backup and reset your Mail directory. Are you sure? (y/n) " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]
+    then
+        backup_dir=~/Mail_backup_$(date +%Y%m%d_%H%M%S)
+        rsync -a ~/Mail/ $backup_dir || { echo "Backup failed"; return 1; }
+
+        rm -rf ~/Mail/*
+
+        mu index --cleanup || { echo "Index cleanup failed"; return 1; }
+        mu index --rebuild || { echo "Index rebuild failed"; return 1; }
+
+        mu-init
+    fi
+}
+
+mu-check-corrupted-messages() {
+   find ~/Mail -type f -name '*' -print0 | xargs -0 file | grep -v "ASCII text"
+}
+
+## EOF

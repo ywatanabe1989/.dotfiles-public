@@ -1,0 +1,32 @@
+#!/bin/bash
+
+# https://superuser.com/questions/20549/how-can-i-encrypt-a-string-in-the-shell/20552
+
+usage_exit() {
+    echo "Usage: $0 [-t TGT (def: nas1]" 1>&2
+    echo
+        exit 1
+}
+
+
+## Default Values
+TGT='nas1'
+
+while getopts :p:t:h OPT
+do
+  case $OPT in
+      t) TGT=$OPTARG;;
+      h) usage_exit;;
+  esac
+done
+
+KEY="${HOME}/.pw/"$TGT".key"
+ENC="${HOME}/.pw/"$TGT".enc" # Encrypted
+
+
+# decrypt the message and output to stdout
+DEC=`openssl rsautl -inkey $KEY -decrypt < $ENC`
+echo $DEC
+
+
+## EOF

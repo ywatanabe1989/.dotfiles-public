@@ -1,0 +1,36 @@
+#!/bin/bash
+
+# https://superuser.com/questions/20549/how-can-i-encrypt-a-string-in-the-shell/20552
+
+usage_exit() {
+    echo "Usage: $0 [-p PW (def: hoge)] [-t TGT (def: nas1]" 1>&2
+    echo
+        exit 1
+}
+
+
+## Default Values
+PW="hoge"
+TGT='nas1'
+
+while getopts :p:t:h OPT
+do
+  case $OPT in
+      p) PW=$OPTARG;;
+      t) TGT=$OPTARG;;
+      h) usage_exit;;
+  esac
+done
+
+KEY="${HOME}/.pw/"$TGT".key"
+ENC="${HOME}/.pw/"$TGT".enc" # Encripted
+
+
+# generate a 2048-bit RSA key and store it in key.txt
+openssl genrsa -out $KEY 2048
+# encrypt "hello world" using the RSA key in key.txt
+echo $PW | openssl rsautl -inkey $KEY -encrypt > $ENC
+echo $ENC' was created'
+
+
+## EOF

@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+# Script created on: 2024-06-22 17:11:10
+# Script path: /home/ywatanabe/.dotfiles/.bash.d/all/030-git-update-safe-dotfiles.sh
+
+git-upload-public-dotfiles() {
+    # Define the repository and temporary directory
+    GITHUB_OWNER="ywatanabe1989"
+    REPOSITORY_NAME=".dotfiles"
+    TMP_DIR="/tmp/.dotfiles-public"
+
+    # Clone the repository into the temporary directory
+    git clone git@github.com:$GITHUB_OWNER/$REPOSITORY_NAME.git $TMP_DIR
+
+    # Navigate to the temporary directory
+    cd $TMP_DIR
+
+    # Remove any files that may contain secrets
+    find . -type f \( -iname "*secret*" -o -name "*.key" -o -name "config_private" -o -name "*.asc" \) -exec rm -f {} +
+
+    for f in ~/.bash.d/all/*git*.sh; do
+        source $f
+    done
+
+    git-init
+
+    rm $TMP_DIR -rf
+}
+
+git-upload-public-dotfiles
+
+# EOF

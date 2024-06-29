@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# Script created on: 2024-06-23 08:01:46
+# Script path: /home/ywatanabe/.dotfiles/.bin/teamviewer.sh
+
+/mnt/c/Windows/System32/cmd.exe /c "C:\Program Files\TeamViewer\TeamViewer.exe" -i 727489711 -P dwm7x732
+
+# EOF

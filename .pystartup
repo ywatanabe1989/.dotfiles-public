@@ -1,0 +1,82 @@
+try:
+    import os
+    import sys
+
+    import matplotlib
+    # matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    import mngs
+
+    import numpy as np
+    import pandas as pd
+    import scipy
+    import seaborn as sns
+
+    import torch
+    import torch.nn as nn
+    import torch.nn.functional as F
+    from IPython import embed
+    from natsort import natsorted
+
+    import random
+
+    # Config for the project
+    CONFIG = mngs.io.load_configs()
+    plt, CC = mngs.plt.configure_mpl(plt)
+
+    # Fix seeds
+    mngs.gen.fix_seeds(os=os, np=np, random=random, torch=torch, verbose=False)
+
+    # Demo signal
+    xx, tt, fs = mngs.dsp.demo_sig(fs=128)
+
+    # Functions
+    def tplot(
+        *args,
+        width=80,
+        height=25,
+        label=None,
+        xlim=None,
+        ylim=None,
+        xlabel=None,
+        title=None,
+        extra_gnuplot_arguments=None,
+        plot_command="plot '-' w lines",
+        ticks_scale=0,
+    ):
+        from termplotlib.plot import plot as _tplot
+        if len(args) == 1:
+            y = args[0]
+            x = np.arange(len(y))  # [REVISED]
+        elif len(args) == 2:  # [REVISED]
+            x, y = args
+        else:
+            raise ValueError("args should be up to 2")  # [REVISED]
+        return _tplot(
+            x,
+            y,
+            width=width,
+            height=height,
+            label=label,
+            xlim=xlim,
+            ylim=ylim,
+            xlabel=xlabel,
+            title=title,
+            extra_gnuplot_arguments=extra_gnuplot_arguments,
+            plot_command=plot_command,
+            ticks_scale=ticks_scale,
+        )  # [REVISED]
+
+    from mngs.gen import src
+
+    # def handle_exception(exc_type, exc_value, exc_traceback):
+    #     if not exc_type is KeyboardInterrupt:
+    #         import ipdb
+    #         ipdb.post_mortem(exc_traceback)
+    #         print("Exception caught; entering ipdb.")
+
+    # sys.excepthook = handle_exception
+except Exception as e:
+       print(e)
+
+print("\n~/.pystartup was loaded.\n")

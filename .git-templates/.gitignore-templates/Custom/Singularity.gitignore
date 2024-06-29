@@ -1,0 +1,6 @@
+**/*.log
+**/*sandbox
+**/*.sif
+**/*image
+**/image
+**/image.sif

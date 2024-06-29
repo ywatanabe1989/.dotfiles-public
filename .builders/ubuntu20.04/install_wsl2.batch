@@ -1,0 +1,6 @@
+# https://www.how2shout.com/how-to/how-to-install-ubuntu-20-04-wl2-on-windows-11.html
+# Windows 11 Start menu icon 
+# Windows Terminal (Admin)
+
+wsl --install
+

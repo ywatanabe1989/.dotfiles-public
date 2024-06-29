@@ -1,0 +1,10 @@
+*.csv
+*.mat
+*.mp4
+*.npy
+*.pdf
+*.pkl
+*.png
+*.pth
+*.tiff
+*.wav
