@@ -1,0 +1,156 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2025-03-08 12:22:46 (ywatanabe)"
+# File: /home/ywatanabe/.dotfiles/.bash.d/all/010_apptainer/apptainer-utils/src/007_exec_static_global.at.src
+
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+
+################################################################################
+# Global Static Execution Operations
+################################################################################
+
+function _apptainer_exec_static_global() {
+    BIN=$1
+    shift
+    echo_eval "apptainer exec \
+    $APPTAINER_RUNTIME_OPTIONS \
+    $APPTAINER_STATIC_IMAGE_GLOBAL_PATH \
+    $BIN \
+    $@"
+}
+
+function apptainer_python_static_global() {
+    [[ "$1" == "-h" ]] && _apptainer_python_static_global_help && return
+    _apptainer_exec_static_global python "$@"
+}
+
+function apptainer_ipython_static_global() {
+    [[ "$1" == "-h" ]] && _apptainer_ipython_static_global_help && return
+    _apptainer_exec_static_global ipython "$@"
+}
+
+function apptainer_jupyter_static_global() {
+    [[ "$1" == "-h" ]] && _apptainer_jupyter_static_global_help && return
+    _apptainer_exec_static_global jupyter-notebook "$@"
+}
+
+# Help functions
+function _apptainer_python_static_global_help() {
+    cat << 'EOF'
+Usage: apy_g [-h] [script.py] [args...]
+Run Python in global static container
+EOF
+}
+
+function _apptainer_ipython_static_global_help() {
+    cat << 'EOF'
+Usage: aipy_g [-h]
+Start IPython in global static container
+EOF
+}
+
+function _apptainer_jupyter_static_global_help() {
+    cat << 'EOF'
+Usage: ajpy_g [-h]
+Launch Jupyter notebook in global static container
+EOF
+}
+
+# Aliases
+alias apy_g='apptainer_python_static_global'
+alias aipy_g='apptainer_ipython_static_global'
+alias ajpy_g='apptainer_jupyter_static_global'
+
+
+
+# #!/bin/bash
+# # Time-stamp: "2024-12-13 06:58:27 (ywatanabe)"
+# # File: ./.dotfiles/.bash.d/all/030_apptainer/apptainer-utils/src/007_exec_static_global.src
+
+# _apptainer_exec_global() {
+#     BIN=$1
+#     shift
+#     echo_eval "apptainer exec $APPTAINER_RUNTIME_OPTIONS $APPTAINER_STATIC_IMAGE_GLOBAL_PATH $BIN $@"
+# }
+
+# apptainer_python_global() {
+#     if [[ "$1" == "-h" ]]; then
+#         echo "Usage: apy_g [-h] [script.py] [args...]"
+#         echo "Run Python in global static container"
+#         return 0
+#     fi
+#     _apptainer_exec_global python "$@"
+# }
+
+# apptainer_ipython_global() {
+#     if [[ "$1" == "-h" ]]; then
+#         echo "Usage: aipy_g [-h]"
+#         echo "Start IPython in global static container"
+#         return 0
+#     fi
+#     _apptainer_exec_global ipython
+# }
+
+# apptainer_jupyter_notebook_global() {
+#     if [[ "$1" == "-h" ]]; then
+#         echo "Usage: ajpy_g [-h] [notebook.ipynb]"
+#         echo "Launch Jupyter notebook in global static container"
+#         return 0
+#     fi
+#     _apptainer_exec_global jupyter-notebook
+# }
+
+# ################################################################################
+# # Aliases
+# ################################################################################
+# alias apy_g=apptainer_python_global
+# alias aipy_g=apptainer_ipython_global
+# alias ajpy_g=apptainer_jupyter_notebook_global
+
+# # #!/bin/bash
+# # # Time-stamp: "2024-12-13 06:54:05 (ywatanabe)"
+# # # File: ./.dotfiles/.bash.d/all/030_apptainer/apptainer-utils/src/007_shell_static_global.src
+
+# # _apptainer_exec_global () {
+# #     BIN=$1
+# #     shift
+# #     echo_eval "apptainer exec $APPTAINER_RUNTIME_OPTIONS $APPTAINER_STATIC_IMAGE_GLOBAL_PATH $BIN $@"
+# # }
+
+# # apptainer_exec_python_global () {
+# #     if [[ "$1" == "-h" ]]; then
+# #         echo "Usage: apptainer_exec_python_global [-h] [script.py] [args...]"
+# #         echo "Run Python in global static container"
+# #         return 0
+# #     fi
+# #     _apptainer_exec_global python "$@"
+# # }
+
+# # apptainer_exec_ipython_global () {
+# #     if [[ "$1" == "-h" ]]; then
+# #         echo "Usage: apptainer_exec_ipython_global [-h]"
+# #         echo "Start IPython in global static container"
+# #         return 0
+# #     fi
+# #     _apptainer_exec_global ipython
+# # }
+
+# # apptainer_exec_jupyter_notebook_global () {
+# #     if [[ "$1" == "-h" ]]; then
+# #         echo "Usage: ajpyhome [-h] [notebook.ipynb]"
+# #         echo "Launch Jupyter notebook in global static container"
+# #         return 0
+# #     fi
+# #     _apptainer_exec_global jupyter-notebook
+# # }
+
+# # # Aliases
+# # alias ashell_g='apptainer_shell_global'
+# # alias apy_g='apptainer_py_global'
+# # alias aipy_g='apptainer_ipython_global'
+# # alias ajpy_g='apptainer_jupyter_notebook_global'
+
+# # # EOF
+
+# EOF

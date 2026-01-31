@@ -1,0 +1,6 @@
+machine nas login ywatanabe port ssh password 0qdpqk1TNp55DiDeLqzhxI7JKRkT!x_!
+machine titan login yusukew port ssh password Yusuke8939
+machine ywata-note-win login ywatanabe port sudo password jjj
+machine smtp.gmail.com login ywata1989@gmail.com port 587 password "gryl bgrs ohwn vpof"
+machine smtp.gmail.com login wyusuuke@gmail.com port 587 password "eclb lrhj ruqa kjma"
+machine smtp.gmail.com login wataning11@gmail.com port 587 password "nnnf ghdp wcor nxlr"

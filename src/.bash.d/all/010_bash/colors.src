@@ -1,0 +1,53 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2025-05-05 09:55:55 (ywatanabe)"
+# File: /ssh:ywatanabe@sp:/home/ywatanabe/.bash.d/all/010_bash/colors.src
+
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+
+# Color definitions
+export BLACK='\033[0;30m'
+export RED='\033[0;31m'
+export GREEN='\033[0;32m'
+export ORANGE='\033[0;33m'
+export BLUE='\033[0;34m'
+export PURPLE='\033[0;35m'
+export CYAN='\033[0;36m'
+export LIGHT_GRAY='\033[0;37m'
+export DARK_GRAY='\033[1;30m'
+export LIGHT_RED='\033[1;31m'
+export LIGHT_GREEN='\033[1;32m'
+export YELLOW='\033[1;33m'
+export LIGHT_BLUE='\033[1;34m'
+export LIGHT_PURPLE='\033[1;35m'
+export LIGHT_CYAN='\033[1;36m'
+export WHITE='\033[1;37m'
+export NC='\033[0m'
+
+cheat_colors() {
+    printf "${BLACK}BLACK='\\\\033[0;30m'${NC}\n"
+    printf "${RED}RED='\\\\033[0;31m'${NC}\n"
+    printf "${GREEN}GREEN='\\\\033[0;32m'${NC}\n"
+    printf "${ORANGE}ORANGE='\\\\033[0;33m'${NC}\n"
+    printf "${BLUE}BLUE='\\\\033[0;34m'${NC}\n"
+    printf "${PURPLE}PURPLE='\\\\033[0;35m'${NC}\n"
+    printf "${CYAN}CYAN='\\\\033[0;36m'${NC}\n"
+    printf "${LIGHT_GRAY}LIGHT_GRAY='\\\\033[0;37m'${NC}\n"
+    printf "${DARK_GRAY}DARK_GRAY='\\\\033[1;30m'${NC}\n"
+    printf "${LIGHT_RED}LIGHT_RED='\\\\033[1;31m'${NC}\n"
+    printf "${LIGHT_GREEN}LIGHT_GREEN='\\\\033[1;32m'${NC}\n"
+    printf "${YELLOW}YELLOW='\\\\033[1;33m'${NC}\n"
+    printf "${LIGHT_BLUE}LIGHT_BLUE='\\\\033[1;34m'${NC}\n"
+    printf "${LIGHT_PURPLE}LIGHT_PURPLE='\\\\033[1;35m'${NC}\n"
+    printf "${LIGHT_CYAN}LIGHT_CYAN='\\\\033[1;36m'${NC}\n"
+    printf "${WHITE}WHITE='\\\\033[1;37m'${NC}\n"
+    printf "NC='\\\\033[0m'\n"
+}
+
+alias ct_colors=cheat_colors
+
+
+export TERM=xterm-256color
+
+# EOF

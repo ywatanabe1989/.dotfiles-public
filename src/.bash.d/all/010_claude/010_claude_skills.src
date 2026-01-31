@@ -1,0 +1,359 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2025-12-23 10:45:00 (ywatanabe)"
+# File: /home/ywatanabe/.dotfiles/.bash.d/all/010_claude/010_claude_skills.src
+# Description: Skills management for Claude Code
+
+SKILLS_DIR="$HOME/.claude/skills"
+SKILLS_SRC_DIR="$HOME/.claude/to_claude/skills"
+
+# ------------------------------------------------------------------------------
+# Text cleaning functions (use centralized from 010_claude_clean_markdown.src)
+# ------------------------------------------------------------------------------
+
+# Backward compatibility aliases to centralized functions
+_cld_skills_delete_html_tags() { _cld_md_delete_html_tags "$@"; }
+_cld_skills_delete_leading_whitespaces() { _cld_md_delete_leading_whitespaces "$@"; }
+_cld_skills_delete_trailing_whitespaces() { _cld_md_delete_trailing_whitespaces "$@"; }
+_cld_skills_clean_file() { _cld_md_clean_file "$@"; }
+
+# ------------------------------------------------------------------------------
+# Skills sync
+# ------------------------------------------------------------------------------
+
+_cld_sync_skills_dir() {
+    local project_root=$1
+    local central_src="$SKILLS_SRC_DIR"
+    local project_tgt="$project_root/.claude/skills"
+
+    echo_info "Syncing skills (central overrides project)"
+    _cld_merge_config_dir "$central_src" "$project_tgt"
+
+    # Clean all SKILL.md files
+    for skill_dir in "$project_tgt"/*/; do
+        [[ -d "$skill_dir" ]] || continue
+        local skill_md="$skill_dir/SKILL.md"
+        if [[ -f "$skill_md" ]]; then
+            _cld_skills_clean_file "$skill_md"
+        fi
+        # Also clean other .md files in skill directory
+        for md_file in "$skill_dir"/*.md; do
+            [[ -f "$md_file" ]] && _cld_skills_clean_file "$md_file"
+        done
+    done
+}
+
+_cld_skills_list() {
+    if [[ ! -d "$SKILLS_DIR" ]]; then
+        echo_info "No skills directory found at: $SKILLS_DIR"
+        return 0
+    fi
+
+    echo_info "Installed skills:"
+    for skill in "$SKILLS_DIR"/*; do
+        if [[ -d "$skill" ]] && [[ -f "$skill/SKILL.md" ]]; then
+            local skill_name=$(basename "$skill")
+            local description=$(grep -m 1 "^description:" "$skill/SKILL.md" | sed 's/description: *//')
+            echo_success "  $skill_name"
+            [[ -n "$description" ]] && echo "    $description"
+        fi
+    done
+}
+
+_cld_skills_create() {
+    local skill_name=$1
+
+    if [[ -z "$skill_name" ]]; then
+        echo_error "Usage: clds-create <skill-name>"
+        echo_info "Example: clds-create scientific-writing"
+        return 1
+    fi
+
+    local skill_path="$SKILLS_DIR/$skill_name"
+
+    if [[ -d "$skill_path" ]]; then
+        echo_error "Skill already exists: $skill_path"
+        return 1
+    fi
+
+    mkdir -p "$skill_path"
+
+    cat > "$skill_path/SKILL.md" << 'EOF'
+---
+name: SKILL_NAME
+description: Brief description of what this skill does and when to use it
+---
+
+# SKILL_NAME
+
+## When to Use
+- Describe when Claude should use this skill
+- Be specific about the contexts
+
+## Instructions
+Provide clear, step-by-step guidance for Claude.
+
+## Examples
+Show concrete examples of using this skill.
+
+EOF
+
+    sed -i "s/SKILL_NAME/$skill_name/g" "$skill_path/SKILL.md"
+
+    echo_success "Created skill template: $skill_path"
+    echo_info "Edit: $skill_path/SKILL.md"
+}
+
+_cld_skills_from_guideline() {
+    local guideline_dir=$1
+    local skill_name=$2
+
+    if [[ -z "$guideline_dir" ]] || [[ -z "$skill_name" ]]; then
+        echo_error "Usage: clds-from-guideline <guideline-dir> <skill-name>"
+        echo_info "Example: clds-from-guideline ~/.claude/to_claude/guidelines/science scientific-writing"
+        return 1
+    fi
+
+    if [[ ! -d "$guideline_dir" ]]; then
+        echo_error "Guideline directory not found: $guideline_dir"
+        return 1
+    fi
+
+    local skill_path="$SKILLS_DIR/$skill_name"
+
+    if [[ -d "$skill_path" ]]; then
+        echo_error "Skill already exists: $skill_path"
+        return 1
+    fi
+
+    mkdir -p "$skill_path"
+
+    # Copy all markdown files from guideline to skill
+    echo_info "Copying guidelines to skill..."
+    cp -r "$guideline_dir"/*.md "$skill_path/" 2>/dev/null || true
+
+    # Create SKILL.md if it doesn't exist
+    if [[ ! -f "$skill_path/SKILL.md" ]]; then
+        cat > "$skill_path/SKILL.md" << EOF
+---
+name: $skill_name
+description: Converted from guidelines at $guideline_dir
+---
+
+# $skill_name
+
+## Overview
+This skill was created from existing guidelines.
+
+## Files
+$(find "$skill_path" -name "*.md" -not -name "SKILL.md" -exec basename {} \; | sed 's/^/- @/')
+
+EOF
+    fi
+
+    echo_success "Created skill from guidelines: $skill_path"
+    echo_info "Edit SKILL.md to add proper description and instructions"
+}
+
+_cld_skills_info() {
+    local skill_name=$1
+
+    if [[ -z "$skill_name" ]]; then
+        echo_error "Usage: clds-info <skill-name>"
+        return 1
+    fi
+
+    local skill_path="$SKILLS_DIR/$skill_name"
+
+    if [[ ! -d "$skill_path" ]]; then
+        echo_error "Skill not found: $skill_name"
+        return 1
+    fi
+
+    echo_info "Skill: $skill_name"
+    echo_info "Path: $skill_path"
+    echo_info ""
+
+    if [[ -f "$skill_path/SKILL.md" ]]; then
+        echo_info "SKILL.md:"
+        head -20 "$skill_path/SKILL.md"
+    fi
+
+    echo_info ""
+    echo_info "Files:"
+    find "$skill_path" -type f -name "*.md" -exec basename {} \;
+}
+
+# ------------------------------------------------------------------------------
+# Validation and fix functions
+# ------------------------------------------------------------------------------
+
+_cld_skills_validate() {
+    local skills_path="${1:-$SKILLS_DIR}"
+
+    if [[ ! -d "$skills_path" ]]; then
+        echo_error "No skills directory found at: $skills_path"
+        return 1
+    fi
+
+    local errors=0
+    echo_info "Validating skills in: $skills_path"
+
+    for skill_dir in "$skills_path"/*/; do
+        [[ -d "$skill_dir" ]] || continue
+        local skill_name=$(basename "$skill_dir")
+        local skill_md="$skill_dir/SKILL.md"
+
+        if [[ ! -f "$skill_md" ]]; then
+            echo_error "  $skill_name: Missing SKILL.md"
+            ((errors++))
+            continue
+        fi
+
+        local first_line=$(head -1 "$skill_md")
+
+        # Check if file starts with YAML frontmatter
+        if [[ "$first_line" != "---" ]]; then
+            echo_error "  $skill_name: SKILL.md does not start with YAML frontmatter (---)"
+            ((errors++))
+            continue
+        fi
+
+        # Check for required name field
+        if ! grep -q "^name:" "$skill_md"; then
+            echo_error "  $skill_name: Missing 'name' field in frontmatter"
+            ((errors++))
+        # Check for required description field
+        elif ! grep -q "^description:" "$skill_md"; then
+            echo_error "  $skill_name: Missing 'description' field in frontmatter"
+            ((errors++))
+        else
+            echo_success "  $skill_name: OK"
+        fi
+    done
+
+    if [[ $errors -eq 0 ]]; then
+        echo_success "All skills validated successfully"
+        return 0
+    else
+        echo_error "Found $errors skill(s) with issues"
+        return 1
+    fi
+}
+
+_cld_skills_fix_dir() {
+    local dir=$1
+    local dry_run=$2
+    local fixed=0
+
+    [[ ! -d "$dir" ]] && return 0
+
+    for skill_dir in "$dir"/*/; do
+        [[ -d "$skill_dir" ]] || continue
+        local skill_name=$(basename "$skill_dir")
+
+        # Fix SKILL.md
+        local skill_md="$skill_dir/SKILL.md"
+        if [[ -f "$skill_md" ]]; then
+            local first_line=$(head -1 "$skill_md")
+
+            if [[ "$first_line" == "---" ]]; then
+                echo_success "  $skill_name/SKILL.md: Already valid"
+            elif grep -q "^<!-- " "$skill_md" && grep -q "^---$" "$skill_md"; then
+                local yaml_start=$(grep -n "^---$" "$skill_md" | head -1 | cut -d: -f1)
+
+                if [[ -n "$yaml_start" ]]; then
+                    echo_info "  $skill_name/SKILL.md: Removing HTML header (lines 1-$((yaml_start-1)))"
+
+                    if [[ $dry_run -eq 0 ]]; then
+                        chmod 644 "$skill_md" 2>/dev/null
+                        local tmp_file=$(mktemp)
+                        tail -n +$yaml_start "$skill_md" > "$tmp_file"
+                        mv "$tmp_file" "$skill_md"
+                        ((fixed++))
+                    fi
+                fi
+            else
+                echo_warning "  $skill_name/SKILL.md: Unknown format, skipping"
+            fi
+        fi
+
+        # Fix other .md files in skill directory
+        for md_file in "$skill_dir"/*.md; do
+            [[ -f "$md_file" ]] || continue
+            [[ "$md_file" == "$skill_md" ]] && continue
+
+            local fname=$(basename "$md_file")
+            if grep -q "^<!-- " "$md_file"; then
+                echo_info "  $skill_name/$fname: Cleaning HTML tags"
+                if [[ $dry_run -eq 0 ]]; then
+                    chmod 644 "$md_file" 2>/dev/null
+                    _cld_skills_clean_file "$md_file"
+                    ((fixed++))
+                fi
+            fi
+        done
+    done
+
+    echo "$fixed"
+}
+
+_cld_skills_fix() {
+    local dry_run=0
+    [[ "$1" == "--dry-run" ]] && dry_run=1
+
+    echo_info "Fixing skill files..."
+    [[ $dry_run -eq 1 ]] && echo_warning "DRY RUN - no changes will be made"
+
+    local total_fixed=0
+
+    # Fix source directory
+    if [[ -d "$SKILLS_SRC_DIR" ]]; then
+        echo_info "Source directory: $SKILLS_SRC_DIR"
+        local fixed=$(_cld_skills_fix_dir "$SKILLS_SRC_DIR" "$dry_run")
+        ((total_fixed += fixed))
+    fi
+
+    # Fix runtime directory
+    if [[ -d "$SKILLS_DIR" ]]; then
+        echo_info "Runtime directory: $SKILLS_DIR"
+        local fixed=$(_cld_skills_fix_dir "$SKILLS_DIR" "$dry_run")
+        ((total_fixed += fixed))
+    fi
+
+    if [[ $dry_run -eq 0 ]]; then
+        echo_success "Fixed $total_fixed file(s)"
+    fi
+}
+
+_cld_skills_fix_all() {
+    echo_info "This will fix all skill files in:"
+    echo_info "  - $SKILLS_SRC_DIR"
+    echo_info "  - $SKILLS_DIR"
+    echo_info "HTML comment headers will be removed to fix YAML frontmatter parsing"
+    echo_info ""
+
+    # Show dry run first
+    _cld_skills_fix --dry-run
+    echo_info ""
+
+    read -p "Proceed with fix? [y/N] " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        _cld_skills_fix
+    else
+        echo_info "Aborted"
+    fi
+}
+
+# Aliases
+alias clds-ls="_cld_skills_list"
+alias clds-create="_cld_skills_create"
+alias clds-from="_cld_skills_from_guideline"
+alias clds-info="_cld_skills_info"
+alias clds-validate="_cld_skills_validate"
+alias clds-fix="_cld_skills_fix_all"
+alias clds-fix-dry="_cld_skills_fix --dry-run"
+alias clds-sync="_cld_sync_skills_dir"
+
+# EOF

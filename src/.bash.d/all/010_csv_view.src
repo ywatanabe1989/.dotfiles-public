@@ -1,0 +1,13 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2025-05-12 12:48:13 (ywatanabe)"
+# File: /home/ywatanabe/.bash.d/all/010_csv_view.src
+
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# ---------------------------------------
+
+csv_view () {
+    column -s, -t $1 | less
+}
+
+# EOF

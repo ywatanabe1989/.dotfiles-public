@@ -1,0 +1,104 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2025-03-08 12:22:43 (ywatanabe)"
+# File: /home/ywatanabe/.dotfiles/.bash.d/all/010_apptainer/apptainer-utils/src/007_exec_static_local.at.src
+
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+
+################################################################################
+# Local Static Execution Operations
+################################################################################
+
+function _apptainer_exec_static_local() {
+    BIN=$1
+    shift
+    echo_eval "apptainer exec \
+    $APPTAINER_RUNTIME_OPTIONS \
+    $APPTAINER_STATIC_IMAGE_LOCAL_PATH \
+    $BIN \
+    $@"
+}
+
+function apptainer_python_static_local() {
+    [[ "$1" == "-h" ]] && _apptainer_python_static_local_help && return
+    _apptainer_exec_static_local python "$@"
+}
+
+function apptainer_ipython_static_local() {
+    [[ "$1" == "-h" ]] && _apptainer_ipython_static_local_help && return
+    _apptainer_exec_static_local ipython "$@"
+}
+
+function apptainer_jupyter_static_local() {
+    [[ "$1" == "-h" ]] && _apptainer_jupyter_static_local_help && return
+    _apptainer_exec_static_local jupyter-notebook "$@"
+}
+
+# Help functions
+function _apptainer_python_static_local_help() {
+    cat << 'EOF'
+Usage: apy [-h] [script.py] [args...]
+Run Python in local static container
+EOF
+}
+
+function _apptainer_ipython_static_local_help() {
+    cat << 'EOF'
+Usage: aipy [-h]
+Start IPython in local static container
+EOF
+}
+
+function _apptainer_jupyter_static_local_help() {
+    cat << 'EOF'
+Usage: ajpy [-h]
+Launch Jupyter notebook in local static container
+EOF
+}
+
+# Aliases
+alias apy='apptainer_python_static_local'
+alias aipy='apptainer_ipython_static_local'
+alias ajpy='apptainer_jupyter_static_local'
+
+
+
+# #!/bin/bash
+# # Time-stamp: "2024-12-13 06:50:43 (ywatanabe)"
+# # File: ./.dotfiles/.bash.d/all/030_apptainer/apptainer-utils/src/006_exec_static_local.src
+
+# _apptainer_exec_static() {
+#     [[ "$1" == "-h" ]] && echo "Usage: _apptainer_exec_static BINARY [ARGS] - Run binary in static container" && return
+#     BIN=$1
+#     shift
+#     echo_eval "apptainer exec \
+#     $APPTAINER_RUNTIME_OPTIONS \
+#     $APPTAINER_STATIC_IMAGE_LOCAL_PATH \
+#     $BIN \
+#     $@"
+# }
+
+# apptainer_exec_python() {
+#     [[ "$1" == "-h" ]] && echo "Usage: apy [ARGS] - Run Python in static container" && return
+#     _apptainer_exec_static python "$@"
+# }
+
+# apptainer_exec_ipython() {
+#     [[ "$1" == "-h" ]] && echo "Usage: aipy [ARGS] - Run IPython in static container" && return
+#     _apptainer_exec_static ipython "$@"
+# }
+
+# apptainer_exec_jupyter() {
+#     [[ "$1" == "-h" ]] && echo "Usage: ajpy [ARGS] - Run Jupyter in static container" && return
+#     _apptainer_exec_static jupyter-notebook "$@"
+# }
+
+# # Aliases
+# apy=apptainer_exec_python
+# aipy=apptainer_exec_ipython
+# ajpy=apptainer_exec_jupyter
+
+# # EOF
+
+# EOF

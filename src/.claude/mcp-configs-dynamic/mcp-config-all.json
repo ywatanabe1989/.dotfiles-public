@@ -1,0 +1,74 @@
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "/home/ywatanabe/"
+      ]
+    },
+    "brave-search": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-brave-search"],
+      "env": {
+        "BRAVE_API_KEY": "$BRAVE_API_KEY"
+      }
+    },
+    "asana": {
+      "command": "npx",
+      "args": ["mcp-remote", "https://mcp.asana.com/sse"]
+    },
+    "cloudflare-observability": {
+      "command": "npx",
+      "args": ["mcp-remote", "https://observability.mcp.cloudflare.com/sse"]
+    },
+    "cloudflare-bindings": {
+      "command": "npx",
+      "args": ["mcp-remote", "https://bindings.mcp.cloudflare.com/sse"]
+    },
+    "slack": {
+      "command": "npx",
+      "args": ["-y", "slack-mcp-server@latest", "--transport", "stdio"],
+      "env": {
+        "SLACK_MCP_XOXC_TOKEN": "$SLACK_MCP_XOXC_TOKEN",
+        "SLACK_MCP_XOXD_TOKEN": "$SLACK_MCP_XOXD_TOKEN"
+      },
+      "description": "https://github.com/korotovsky/slack-mcp-server"
+    },
+    "sequential-thinking": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"]
+    },
+    "puppeteer": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-puppeteer"]
+    },
+    "cammy": {
+      "command": "python",
+      "args": ["-m", "cammy", "--mcp"]
+    },
+    "screen-manager": {
+      "command": "python",
+      "args": ["-m", "screen_manager.mcp_server"]
+    },
+    "emacs-server": {
+      "command": "/home/ywatanabe/.venv/bin/python",
+      "args": ["-m", "emacs_mcp_server"]
+    },
+    "emacs-tracker": {
+      "command": "/home/ywatanabe/.venv/bin/python",
+      "args": ["-m", "emacs_tracker.server"]
+    },
+    "pyposter": {
+      "command": "/home/ywatanabe/proj/pyposter/bin/pyposter-mcp-wrapper.sh",
+      "env": {
+        "PYPOSTER_ENV_PATH": "/home/ywatanabe/.bash.d/secrets/000_ENV_PYPOSTER.src"
+      }
+    },
+    "davinci-resolve": {
+      "command": "/home/ywatanabe/proj/davinci-resolve-mcp/resolve-mcp",
+      "timeout": 120000
+    }
+  }
+}

@@ -1,0 +1,124 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2025-05-12 12:48:25 (ywatanabe)"
+# File: /home/ywatanabe/.bash.d/all/010_video.src
+
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# ---------------------------------------
+
+im2vid () {
+    local usage="Usage: im2vid [-f FRAMERATE] [-p PATTERN] [-o OUTPUT]
+    Convert image sequence to video using ffmpeg
+
+    Options:
+        -f  Framerate (default: 30)
+        -p  Input file pattern (default: *.jpg)
+        -o  Output filename (default: out.mp4)
+        -h  Show this help"
+    local framerate=30
+    local pattern="*.jpg"
+    local output="out.mp4"
+
+    while getopts "f:p:o:h" opt; do
+        case $opt in
+            f) framerate=$OPTARG ;;
+            p) pattern=$OPTARG ;;
+            o) output=$OPTARG ;;
+            h) echo "$usage"; return 0 ;;
+            *) echo "$usage" 1>&2; return 1 ;;
+        esac
+    done
+
+    ffmpeg -framerate "$framerate" -pattern_type glob -i "$pattern" \
+           -vf "scale=trunc(iw/2)*2:trunc(ih/2)*2" \
+           -c:v libx264 -pix_fmt yuv420p "$output"
+}
+
+
+
+mp4_to_gif () {
+    local usage="Usage: mp4_to_gif [-i INPUT] [-o OUTPUT] [-f FPS] [-w WIDTH]
+    Convert MP4 video to GIF using ffmpeg
+
+    Options:
+        -i  Input MP4 file (required)
+        -o  Output GIF file (default: input.gif)
+        -f  Frames per second (default: 10)
+        -w  Output width in pixels (default: 800)
+        -h  Show this help"
+
+    local input=""
+    local output=""
+    local fps=10
+    local width=800
+
+    while getopts "i:o:f:w:h" opt; do
+        case $opt in
+            i) input=$OPTARG ;;
+            o) output=$OPTARG ;;
+            f) fps=$OPTARG ;;
+            w) width=$OPTARG ;;
+            h) echo "$usage"; return 0 ;;
+            *) echo "$usage" 1>&2; return 1 ;;
+        esac
+    done
+
+    if [[ -z "$input" ]]; then
+        echo "Error: Input file is required" 1>&2
+        echo "$usage" 1>&2
+        return 1
+    fi
+
+    if [[ -z "$output" ]]; then
+        output="${input%.*}.gif"
+    fi
+
+    ffmpeg -i "$input" \
+           -vf "fps=$fps,scale=$width:-1" \
+           -c:v gif \
+           "$output"
+}
+
+mp42gif() {
+    local usage="Usage: mp42gif [-f FPS] [-s SCALE] [-i INPUT] [-o OUTPUT] [-p SPEED]
+    Convert MP4 to GIF using ffmpeg
+
+    Options:
+        -f  FPS (default: 10)
+        -s  Scale width (default: 720)
+        -i  Input MP4 file
+        -o  Output GIF file
+        -p  Playback speed multiplier (default: 1)
+        -h  Show this help"
+
+    local fps=10
+    local scale=720
+    local input=""
+    local output=""
+    local speed=1
+
+    OPTIND=1
+    while getopts "f:s:i:o:p:h" opt; do
+        case $opt in
+            f) fps="$OPTARG" ;;
+            s) scale="$OPTARG" ;;
+            i) input="${OPTARG//\\ / }" ;;
+            o) output="$OPTARG" ;;
+            p) speed="$OPTARG" ;;
+            h) echo "$usage"; return 0 ;;
+            *) echo "$usage" >&2; return 1 ;;
+        esac
+    done
+
+    if [[ ! -f "$input" || -z "$output" ]]; then
+        echo "Input and output files are required" >&2
+        echo "$usage" >&2
+        return 1
+    fi
+
+    ffmpeg -i "$input" \
+        -vf "fps=$fps,setpts=PTS/$speed,scale=$scale:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse" \
+        -loop 0 "$output"
+}
+
+# EOF

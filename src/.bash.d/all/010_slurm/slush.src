@@ -1,0 +1,58 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2025-03-06 12:58:22 (ywatanabe)"
+# File: /home/ywatanabe/.dotfiles/.bash.d/all/010_slurm/slush.src
+
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+slush() {
+    usage() {
+        echo "Usage: slush [-t|--time TIME] [-m|--mem SIZE] SCRIPT [ARGS...]"
+        echo
+        echo "Options:"
+        echo "  -t, --time TIME    Wall time limit (default: 1:00:00)"
+        echo "  -m, --mem SIZE     Memory size in GB (default: 32)"
+        echo "  -h, --help         Show this help message"
+        echo
+        echo "Example:"
+        echo "  slush -t 4:00:00 -m 64 script.sh arg1 arg2"
+        exit 1
+    }
+
+    local time="24:00:00"
+    local memory_gb="64"
+    local script_path=""
+    local args=()
+
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            -t|--time) time="$2"; shift 2;;
+            -m|--mem) memory_gb="$2"; shift 2;;
+            -h|--help) usage;;
+            -*) echo "Unknown option: $1"; usage;;
+            *)
+                if [ -z "$script_path" ]; then
+                    script_path="$1"
+                else
+                    args+=("$1")
+                fi
+                shift;;
+        esac
+    done
+
+    if [ -z "$script_path" ]; then
+        echo "Error: Script path is required"
+        usage
+    fi
+
+    mkdir -p logs
+
+    sbatch --job-name="${script_path##*/}" \
+           --time="$time" \
+           --mem="${memory_gb}G" \
+           --output=logs/%j.out \
+           --error=logs/%j.err \
+           "$script_path" "${args[@]}"
+}
+
+# EOF

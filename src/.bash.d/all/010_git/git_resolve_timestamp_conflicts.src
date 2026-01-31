@@ -1,0 +1,111 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2025-05-31 23:06:59 (ywatanabe)"
+# File: /ssh:ywatanabe@sp:/home/ywatanabe/.dotfiles/.bash.d/all/010_git/git_resolve_timestamp_conflicts.src
+
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# ---------------------------------------
+
+# **git_resolve_timestamp_conflicts.src** - `grep` on missing files:
+# ```bash
+# # Add file existence check
+# if [ -f "$file" ] && grep -q -E "(Time-stamp:|Timestamp:|Date:)" "$file"; then
+# ```
+
+git_resolve_timestamp_conflicts() {
+    # Automatically resolves Git merge conflicts involving timestamp lines
+    #
+    # Usage: git_resolve_timestamp_conflicts
+    #
+    # This function:
+    # - Finds all files with unresolved conflicts
+    # - For files containing timestamp patterns (Time-stamp:, Timestamp:, or Date:)
+    # - Automatically resolves by keeping the newer timestamp
+    # - Other conflicts are left unchanged for manual resolution
+
+    # Find all files with unresolved conflicts
+    git diff --name-only --diff-filter=U | while read -r file; do
+        # Check if file contains any timestamp format
+        if [ ! -f "$file" ]; then
+            continue
+        fi
+        if grep -q -E "(Time-stamp:|Timestamp:|Date:)" "$file"; then
+
+        # if [ -f "$file" ] && grep -q -E "(Time-stamp:|Timestamp:|Date:)" "$file"; then
+            # Process file using awk to resolve timestamp conflicts
+            awk '
+                BEGIN { printing = 1 }
+
+                # Start of conflict marker
+                /^<<<<<<< HEAD/{
+                    printing = 0
+                    in_conflict = 1
+                    next
+                }
+
+                # Middle of conflict marker
+                /^=======/{
+                    in_conflict = 2
+                    next
+                }
+
+                # End of conflict marker
+                /^>>>>>>>/{
+                    printing = 1
+                    in_conflict = 0
+
+                    # If we found timestamps in both sides, keep the newer one
+                    if (ts1 && ts2) {
+                        if (ts1 > ts2)
+                            print ts1_line
+                        else
+                            print ts2_line
+                        ts1 = ts2 = ""
+                    } else {
+                        print $0
+                    }
+                    next
+                }
+
+                # Store timestamp from HEAD version
+                in_conflict == 1 && /(Time-stamp:|Timestamp:|Date:)/{
+                    ts1 = $0
+                    ts1_line = $0
+                }
+
+                # Store timestamp from incoming version
+                in_conflict == 2 && /(Time-stamp:|Timestamp:|Date:)/{
+                    ts2 = $0
+                    ts2_line = $0
+                }
+
+                # Print lines in conflict that are not timestamps
+                in_conflict && !ts1 && !ts2 {
+                    print $0
+                }
+
+                # Print lines not in conflict
+                printing && !in_conflict {
+                    print
+                }
+            ' "$file" > "${file}.tmp" && mv -f "${file}.tmp" "$file"
+
+            echo "Resolved timestamp conflict in: $file"
+        fi
+    done
+}
+
+alias rtc="git_resolve_timestamp_conflicts"
+
+# Resolved timestamp conflict in: .bash.d/all/010_claude.src
+# grep: .claude/guidelines/guidelines_command_permission_rules.md: No such file or directory
+# Resolved timestamp conflict in: .claude/to_claude/bin/check_parens.sh
+# Resolved timestamp conflict in: .claude/to_claude/bin/count_parens.sh
+# Resolved timestamp conflict in: .claude/to_claude/bin/elisp_check_parens.sh
+# Resolved timestamp conflict in: .claude/to_claude/guidelines/IMOPRTANT_guidelines_command_permission_rules.md
+# Resolved timestamp conflict in: .claude/to_claude/guidelines/guidelines_command_permission_rules.md
+# Resolved timestamp conflict in: .claude/to_claude/guidelines/guidelines_programming_emacs_server_rules.md
+# Resolved timestamp conflict in: .claude/to_claude/guidelines/guidelines_science_general_rules.md
+# grep: .claude/tools/check_parens.sh: No such file or directory
+
+# EOF

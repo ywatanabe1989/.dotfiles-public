@@ -1,0 +1,92 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2025-08-28 08:24:52 (ywatanabe)"
+# File: /home/ywatanabe/.dotfiles/.bash.d/all/010_screen.src
+
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# ---------------------------------------
+
+# USE_TMUX=true  # Set this to false to use screen instead of tmux
+USE_TMUX=false
+
+if $USE_TMUX; then
+    source $HOME/.bash.d/all/030_tmux.sh >/dev/null 2>&1
+
+    # Tmux aliases
+    alias sb=tb
+    alias sc=tc
+    alias sd=td
+    alias sl=tl
+    alias sr=tr
+    alias ss=ts
+    alias swipe=twipe
+    alias sk=tk
+    alias sq=tq
+    alias to_screen=tmux_glob_session
+
+else
+    # Screen aliases
+    alias sb='screen -dmS'
+    alias sc='screen'
+    alias sd='screen -D'
+    alias sl='screen -list'
+    alias sr='screen -r'
+    alias ss='screen -S'
+    alias swipe='screen -wipe && screen -list'
+
+    screen_kill () {
+        # Terminates screen sessions matching the given pattern with confirmation
+        # Usage: sk pattern
+        sessions=$(screen -ls | grep "$1" | cut -d. -f1 | awk '{print $1}')
+        if [ -n "$sessions" ]; then
+            echo "Matching sessions:"
+            echo "$sessions"
+            read -p "Kill these sessions? (y/n) " choice
+            case "$choice" in
+                y|Y ) echo "$sessions" | xargs kill ;;
+                * ) echo "Operation cancelled" ;;
+            esac
+        else
+            echo "No matching sessions found"
+        fi
+        clear
+        screen -list
+    }
+    alias sk=screen_kill
+
+    screen_quit () {
+        # Gracefully quits screen sessions matching the given pattern with confirmation
+        # Usage: sq pattern
+        sessions=$(screen -ls | grep --color=auto "$1" | cut -d. -f1 | awk '{print $1}')
+        if [ -n "$sessions" ]; then
+            echo "Matching sessions:"
+            echo "$sessions"
+            read -p "Quit these sessions? (y/n) " choice
+            case "$choice" in
+                y|Y ) echo "$sessions" | xargs -I {} screen -X -S {} quit ;;
+                * ) echo "Operation cancelled" ;;
+            esac
+        else
+            echo "No matching sessions found"
+        fi
+        clear
+        screen -list
+    }
+    alias sq=screen_quit
+
+    to_screen() {
+        # Moves a running process to a new screen session
+        # Usage: to_screen PID
+
+        # for pid in `pgrep rsync`; do to_screen $pid; done
+        local PID="$1"
+        local CMD=$(ps -p $PID -o cmd=)
+        local SESSION_NAME="proc_$PID"
+        screen -dmS "$SESSION_NAME"
+        screen -S "$SESSION_NAME" -X stuff "reptyr -T $PID^M"
+        echo $PID was moved to the screen session "$SESSION_NAME"
+    }
+
+fi
+
+# EOF

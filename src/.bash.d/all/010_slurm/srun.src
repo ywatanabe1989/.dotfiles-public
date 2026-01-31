@@ -1,0 +1,92 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2025-03-06 12:58:33 (ywatanabe)"
+# File: /home/ywatanabe/.dotfiles/.bash.d/all/010_slurm/srun.src
+
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+
+_srun_base() {
+    local partition=$1 n_gpus=$2 time=$3 memory=$4 task_name=$5
+    shift 5
+
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            -g|--gpus) n_gpus="$2"; shift 2;;
+            -t|--time) time="$2"; shift 2;;
+            -m|--mem) memory="${2%G}"; shift 2;;
+            -n|--name) task_name="$2"; shift 2;;
+            *) break;;
+        esac
+    done
+
+    # Automatically select partition based on time
+    if [ "$n_gpus" -gt 0 ]; then
+        if [ "$time" \< "4:01:00" ]; then
+            partition="gpu-a100-short"
+        else
+            partition="gpu-a100,gpu-a100-short,gpu-a100-preempt,deeplearn,feit-gpu-a100"
+        fi
+    fi
+
+    local command="$(which srun)"
+    [[ -n "$partition" ]] && command+=" --partition='$partition'"
+    [[ -n "$task_name" ]] && command+=" --job-name='$task_name'"
+    command+=" --gres=gpu:$n_gpus"
+    command+=" --time='$time'"
+    command+=" --mem='${memory}G'"
+    command+=" $*"
+
+    echo "--------------------------------------------------------------------------------"
+    echo "Executing: $command"
+    echo "--------------------------------------------------------------------------------"
+
+    eval "$command"
+}
+
+s_run() {
+    usage() {
+        echo "Usage: srun [-o|-s|-l] [override_options] command"
+        echo
+        echo "Modes:"
+        echo "  -s, --short    Short GPU (A100, 1 GPU, 4h, 32GB)"
+        echo "  -l, --long     Long GPU (4 GPU, 7d, 400GB)"
+        echo
+        echo "Options:"
+        echo "  -g, --gpus NUM    Number of GPUs"
+        echo "  -t, --time TIME   Time limit (HH:MM:SS)"
+        echo "  -m, --mem SIZE    Memory size (in GB)"
+        echo "  -n, --name NAME   Job name"
+        echo "  -h, --help        Show this help"
+        exit 1
+    }
+
+    if [[ $# -eq 0 ]]; then
+        usage
+    fi
+
+    case "$1" in
+        -s|--short)
+            shift
+            _srun_base "gpu-a100,gpu-a100-short,gpu-a100-preempt,deeplearn,feit-gpu-a100" 1 "4:00:00" 32 "short_task" "$@"
+            ;;
+        -l|--long)
+            shift
+            _srun_base "gpu-a100" 4 "7-00:00:00" 256 "long_task" "$@"
+            ;;
+        -h|--help)
+            usage
+            ;;
+        *)
+            local n_gpus=0 time="4:00:00" memory=64 task_name="task"
+            _srun_base "" "$n_gpus" "$time" "$memory" "$task_name" "$@"
+            ;;
+    esac
+}
+
+# And update aliases to use s_run instead of srun:
+alias sruns="s_run -s"
+alias srunl="s_run -l"
+alias srung="s_run -g"
+
+# EOF

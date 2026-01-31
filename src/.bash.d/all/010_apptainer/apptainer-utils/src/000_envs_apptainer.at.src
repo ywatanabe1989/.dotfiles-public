@@ -1,0 +1,79 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2025-03-08 12:22:56 (ywatanabe)"
+# File: /home/ywatanabe/.dotfiles/.bash.d/all/010_apptainer/apptainer-utils/src/000_envs_apptainer.at.src
+
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+
+################################################################################
+# Environmental Variables Passed to Apptainer Container
+################################################################################
+# Path settings
+_APPTAINERENV_PATH=$(
+    if command -v apptainer >/dev/null 2>&1; then
+        echo "$PATH" | sed "s|$(dirname $(command -v apptainer))||g; s|::*|:|g; s|^:||; s|:$||"
+    else
+        echo "$PATH"
+    fi
+)
+
+export APPTAINERENV_PATH=${APPTAINERENV_PATH-$_APPTAINERENV_PATH}
+
+# Python environment
+export APPTAINERENV_PYTHONPATH=${APPTAINERENV_PYTHONPATH-$PYTHONPATH}
+export APPTAINERENV_PYTHONSTARTUP=${APPTAINERENV_PYTHONSTARTUP-$PYTHONSTARTUP}
+
+# CUDA configuration
+export APPTAINERENV_CUDA_VISIBLE_DEVICES=${APPTAINERENV_CUDA_VISIBLE_DEVICES-$CUDA_VISIBLE_DEVICES}
+
+# Base container settings
+export APPTAINERENV_USER=${APPTAINERENV_USER-$USER}
+export APPTAINERENV_MYHOME=${APPTAINERENV_MYHOME-$HOME}
+export APPTAINERENV_DISPLAY=${APPTAINERENV_DISPLAY-$DISPLAY}
+export APPTAINERENV_OUTDATED_IGNORE=${APPTAINERENV_OUTDATED_IGNORE-$OUTDATED_IGNORE}
+
+# Terminal
+export APPTAINERENV_TERM=${APPTAINERENV_TERM-"xterm-256color"}
+
+
+
+# #!/bin/bash
+# # Time-stamp: "2024-12-09 03:51:23 (ywatanabe)"
+# # File: ./apptainer_utilities/src/000_envs_apptainer.src
+
+# ################################################################################
+# # Apptainer Environment Configuration
+# #
+# # Sets up environment variables for Apptainer containers:
+# # 1. Path configurations
+# # 2. Python environment
+# # 3. Base container settings
+# # 4. Display and CUDA settings
+# ################################################################################
+
+# # Path settings
+# export APPTAINERENV_PATH=$(
+#     if command -v apptainer >/dev/null 2>&1; then
+#         echo "$PATH" | sed "s|$(dirname $(command -v apptainer))||g; s|::*|:|g; s|^:||; s|:$||"
+#     else
+#         echo "$PATH"
+#     fi
+# )
+
+# # Python environment
+# export APPTAINERENV_PYTHONPATH="$PYTHONPATH"
+# export APPTAINERENV_PYTHONSTARTUP="$PYTHONSTARTUP"
+
+# # CUDA configuration
+# export APPTAINERENV_CUDA_VISIBLE_DEVICES="$CUDA_VISIBLE_DEVICES"
+
+# # Base container settings
+# export APPTAINERENV_USER="$USER"
+# export APPTAINERENV_MYHOME="$MYHOME"
+# export APPTAINERENV_DISPLAY="$DISPLAY"
+# export APPTAINERENV_OUTDATED_IGNORE="$OUTDATED_IGNORE"
+
+# # EOF
+
+# EOF

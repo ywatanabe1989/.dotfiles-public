@@ -1,0 +1,16 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2025-05-12 12:48:21 (ywatanabe)"
+# File: /home/ywatanabe/.bash.d/all/010_pdf_studio.src
+
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# ---------------------------------------
+
+pdf() {
+    WPATH=$(wslpath -w "$1")
+    /mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe -Command \
+        "Start-Process \"C:\Program Files\PDFStudio2020\pdfstudio2020.exe\" -ArgumentList \"$WPATH\"" &
+    clear
+}
+
+# EOF

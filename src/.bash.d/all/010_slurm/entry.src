@@ -1,0 +1,33 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2025-09-16 16:59:13 (ywatanabe)"
+# File: /ssh:sp:/home/ywatanabe/.bash.d/all/010_slurm/entry.src
+
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# ---------------------------------------
+
+check_slurm_command() {
+    if command -v module &>/dev/null; then
+        module load slurm cuda/11.7.0 &>/dev/null
+        return 0
+    fi
+    return 1
+}
+
+if check_slurm_command; then
+    source "$THIS_DIR/basics.src"
+    source "$THIS_DIR/sbatch.src"
+    source "$THIS_DIR/scancel.src"
+    source "$THIS_DIR/sint.src"
+    source "$THIS_DIR/sjump.src"
+    source "$THIS_DIR/slush.src"
+    source "$THIS_DIR/scat.src"
+    source "$THIS_DIR/stail.src"
+    source "$THIS_DIR/shead.src"
+    source "$THIS_DIR/squeue.src"
+    source "$THIS_DIR/sprio.src"
+    source "$THIS_DIR/srun.src"
+    source "$THIS_DIR/sclean.src"
+fi
+
+# EOF

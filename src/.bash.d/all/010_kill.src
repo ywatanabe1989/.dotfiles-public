@@ -1,0 +1,169 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2025-09-05 07:07:30 (ywatanabe)"
+# File: /home/ywatanabe/.dotfiles/.bash.d/all/010_kill.src
+
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# ---------------------------------------
+
+# SIGTERM (15): Graceful termination request. Allows process to clean up.
+# SIGINT (2): Interrupt from keyboard (Ctrl+C). Similar to SIGTERM, but interactive.
+# SIGKILL (9): Forceful termination. Immediate exit, no cleanup. Use as last resort.
+
+
+send_grep_base() {
+    local pattern=$1
+    local signal=$2
+    local signal_name=$3
+    local use_sudo=$4
+    local force=false
+
+    shift 4
+
+    for arg in "$@"; do
+        case "$arg" in
+            -f|--force)
+                force=true
+                ;;
+        esac
+    done
+
+    if [[ -z $pattern ]]; then
+        echo "Usage: ${FUNCNAME[1]} <pattern> [-f|--force]"
+        return 1
+    fi
+
+    local matching_processes=$(ps aux | grep "$pattern" | grep -v grep)
+
+    if [[ -z $matching_processes ]]; then
+        echo "No processes found matching pattern: $pattern"
+        return 1
+    fi
+
+    echo "Found the following processes for pattern '$pattern':"
+    echo "$matching_processes"
+
+    if [[ $force != true ]]; then
+        read -p "Do you want to send $signal_name to these processes? You might want to consider SIGTERM (15), SIGINT (2), or SIGKILL (9). (y/n) " answer
+        [[ $answer != "y" ]] && { echo "Aborted sending $signal_name to processes."; return 1; }
+    fi
+
+    if [[ $use_sudo == "sudo" ]]; then
+        echo "$matching_processes" | awk '{print $2}' | xargs -r sudo kill -$signal
+    else
+        echo "$matching_processes" | awk '{print $2}' | xargs -r kill -$signal
+    fi
+
+    echo "$signal_name sent to processes."
+}
+
+term_grep() {
+    send_grep_base "$1" 15 "SIGTERM" "" "$@"
+}
+
+int_grep() {
+    send_grep_base "$1" 2 "SIGINT" "" "$@"
+}
+
+kill_grep() {
+    send_grep_base "$1" 9 "SIGKILL" "" "$@"
+}
+
+sudo_term_grep() {
+    send_grep_base "$1" 15 "SIGTERM" "sudo" "$@"
+}
+
+sudo_int_grep() {
+    send_grep_base "$1" 2 "SIGINT" "sudo" "$@"
+}
+
+sudo_kill_grep() {
+    send_grep_base "$1" 9 "SIGKILL" "sudo" "$@"
+}
+
+
+
+# send_grep_base() {
+#     local pattern=$1
+#     local signal=$2
+#     local signal_name=$3
+#     local use_sudo=$4
+
+#     if [[ -z $pattern ]]; then
+#         echo "Usage: ${FUNCNAME[1]} <pattern>"
+#         return 1
+#     fi
+
+#     local matching_processes=$(ps aux | grep "$pattern" | grep -v grep)
+#     if [[ -z $matching_processes ]]; then
+#         echo "No processes found matching pattern: $pattern"
+#         return 1
+#     fi
+
+#     echo "Found the following processes for pattern '$pattern':"
+#     echo "$matching_processes"
+#     read -p "Do you want to send $signal_name to these processes? You might want to consider SIGTERM (15), SIGINT (2), or SIGKILL (9). (y/n) " answer
+#     if [[ $answer == "y" ]]; then
+#         if [[ $use_sudo == "sudo" ]]; then
+#             echo "$matching_processes" | awk '{print $2}' | xargs -r sudo kill -$signal
+#         else
+#             echo "$matching_processes" | awk '{print $2}' | xargs -r kill -$signal
+#         fi
+#         echo "$signal_name sent to processes."
+#     else
+#         echo "Aborted sending $signal_name to processes."
+#     fi
+# }
+
+# term_grep() {
+#     send_grep_base "$1" 15 "SIGTERM" ""
+# }
+
+# int_grep() {
+#     send_grep_base "$1" 2 "SIGINT" ""
+# }
+
+# kill_grep() {
+#     send_grep_base "$1" 9 "SIGKILL" ""
+# }
+
+# sudo_term_grep() {
+#     send_grep_base "$1" 15 "SIGTERM" "sudo"
+# }
+
+# sudo_int_grep() {
+#     send_grep_base "$1" 2 "SIGINT" "sudo"
+# }
+
+# sudo_kill_grep() {
+#     send_grep_base "$1" 9 "SIGKILL" "sudo"
+# }
+
+
+# # kill_grep() {
+# #     pattern=$1
+# #     if [[ -z $pattern ]]; then
+# #         echo "Usage: kill_grep <pattern>"
+# #         return 1
+# #     fi
+# #     matching_processes=$(ps aux | grep "$pattern" | grep -v grep)
+# #     if [[ -z $matching_processes ]]; then
+# #         echo "No processes found matching pattern: $pattern"
+# #         return 1
+# #     fi
+# #     echo "Found the following processes for pattern '$pattern':"
+# #     echo "$matching_processes"
+# #     read -p "Do you want to kill these processes? (y/n) " answer
+# #     if [[ $answer == "y" ]]; then
+# #         echo "$matching_processes" | awk '{print $2}' | xargs -r kill -9
+# #         echo "Processes killed."
+# #     else
+# #         echo "Aborted killing processes."
+# #     fi
+# # }
+
+# kill_wata_py () {
+#     ps aux | grep ywatana+ | egrep 'python' | awk '{ print "kill", $2 }' | sudo sh
+# }
+
+# EOF

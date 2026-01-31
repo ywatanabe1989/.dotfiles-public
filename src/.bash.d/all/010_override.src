@@ -1,0 +1,21 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2025-05-12 12:48:20 (ywatanabe)"
+# File: /home/ywatanabe/.bash.d/all/010_override.src
+
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# ---------------------------------------
+
+alias mkdir='mkdir -pv'
+alias du='du -sh'
+alias df='df -h'
+alias free='watch -d -n 1 free -h'
+alias cp='cp -i'
+alias mv='mv -i'
+alias rm='rm -i'
+alias make='make -j12'
+alias grep='grep --color=auto'
+alias egrep='egrep --color=auto'
+alias rg='rg --no-ignore --hidden'
+
+# EOF

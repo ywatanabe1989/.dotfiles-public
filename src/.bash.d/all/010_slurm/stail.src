@@ -1,0 +1,104 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2025-09-16 17:10:06 (ywatanabe)"
+# File: /ssh:sp:/home/ywatanabe/.bash.d/all/010_slurm/stail.src
+
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# ---------------------------------------
+
+POTENTIAL_DIRS=("." "./slurm_logs" "./logs" "./output")
+
+stail() {
+    local usage="Usage: stail [job_index] [-d directory] [-n n_tail] [-a] [out|err|both]"
+    local directory="."
+    local jobid=""
+    local type="both"
+    local n_tail="30"
+    local all_jobs=false
+
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            -h|--help)
+                echo "$usage"
+                return 0
+                ;;
+            -a)
+                all_jobs=true
+                shift
+                ;;
+            -d)
+                directory="$2"
+                POTENTIAL_DIRS=("$directory")
+                shift 2
+                ;;
+            -n)
+                n_tail="$2"
+                shift 2
+                ;;
+            out|err|both)
+                type="$1"
+                shift
+                ;;
+            *)
+                if [[ "$1" =~ ^-?[0-9]+$ ]]; then
+                    jobid=$(_get_jobid "$1")
+                    if [ -z "$jobid" ]; then
+                        echo "Error: No job found at index $1" >&2
+                        return 1
+                    fi
+                fi
+                shift
+                ;;
+        esac
+    done
+
+    if [ -z "$jobid" ]; then
+        _list_jobs
+        return 0
+    fi
+
+    local base_job=$(echo "$jobid" | cut -d'_' -f1)
+
+    if [ "$type" = "both" ]; then
+        for dir in "${POTENTIAL_DIRS[@]}"; do
+            local found_files=()
+
+            for out_file in ${dir}/*${base_job}*.out; do
+                if [ -f "$out_file" ]; then
+                    found_files+=("$out_file")
+                fi
+            done
+
+            for err_file in ${dir}/*${base_job}*.err; do
+                if [ -f "$err_file" ]; then
+                    found_files+=("$err_file")
+                fi
+            done
+
+            if [ ${#found_files[@]} -gt 0 ]; then
+                echo "Found slurm log files: ${found_files[*]}"
+                tail -n "$n_tail" -f "${found_files[@]}"
+                return 0
+            fi
+        done
+    else
+        for dir in "${POTENTIAL_DIRS[@]}"; do
+            for potential_path in ${dir}/*${base_job}*.${type}; do
+                if [ -f "$potential_path" ]; then
+                    echo "Found slurm log file: $potential_path"
+                    tail -n "$n_tail" -f "$potential_path"
+                    return 0
+                fi
+            done
+        done
+    fi
+
+    echo "Error: No ${type} files found for job ${base_job}" >&2
+    return 1
+}
+
+for ii in {1..128}; do
+    alias "stail$ii=stail $ii"
+done
+
+# EOF

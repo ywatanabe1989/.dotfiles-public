@@ -1,0 +1,16 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2025-04-05 16:23:23 (ywatanabe)"
+# File: /ssh:sp:/home/ywatanabe/.dotfiles/.bash.d/all/010_slurm/basics.src
+
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+
+# alias sinfo="sinfo -o '%8P %10n %.11T %.4c %.8z %.6m %12G %10l %10L %10O %20E' -S '-P' -p gpu-a100"%10u
+
+alias snode="ssh \$(squeue -u \$USER -h -o '%R')"
+alias sjob="srun --jobid \$(sqid) --pty"
+alias sns="srun --jobid \$(sqid) --pty bash -c 'watch -d -n 0.5 nvidia-smi'"
+alias salloc="sacctmgr show qos format=name,maxtresperuser,grptres"
+
+# EOF

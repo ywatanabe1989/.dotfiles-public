@@ -1,0 +1,69 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2025-08-30 06:07:18 (ywatanabe)"
+# File: /home/ywatanabe/.dotfiles/.bash.d/all/000_bash_reload_bashd.src
+
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# ---------------------------------------
+
+reload_bashd() {
+    # Add check for module command
+    local has_module=0
+    command -v module >/dev/null 2>&1 && has_module=1
+    export HAS_MODULE_COMMAND=$has_module
+    local files
+    local error_count=0
+
+    # Exclude files matching patterns
+    # - Files in directories named "old" or ".old"
+    # - Files with ".xx.src" where xx is not a dot (double extension files)
+    EXCLUDE_EXPRESSIONS=("/\.old/" "\.old/" "\.[^\.]+\.src$")
+    # echo "DEBUG: Looking for .src files in ~/.bash.d/"
+    # echo "DEBUG: ~/.bash.d/ exists: $([ -d ~/.bash.d/ ] && echo "yes" || echo "no")"
+    # Get all .src files
+    all_files=$(find ~/.bash.d/ -type f -name "*.src" 2>/dev/null)
+    # echo "DEBUG: Found files before filtering:"
+    # echo "$all_files"
+    # Apply filters using grep
+    files="$all_files"
+    # Only exclude .old directory files, not other files
+    files=$(echo "$files" | grep -v -E "/\.old/")
+    # echo "DEBUG: Files after excluding .old directories:"
+    # echo "$files"
+    # Sort the files
+    files=$(echo "$files" | sort -V)
+    # echo "Files to load:"
+    # if [ -z "$files" ]; then
+    #     # echo "DEBUG: No files found after filtering and sorting"
+    # fi
+    for f in $files; do
+        # echo "$f"
+        # echo "DEBUG: Attempting to source $f"
+        # Don't source the file twice - remove the redundant source command
+        # shellcheck source=/dev/null
+        if ! . "$f"; then
+            echo "Error while loading $f"
+            ((error_count++))
+        fi
+    done
+
+    # # Attempt to start tmux server silently
+    # tmux start-server >/dev/null 2>&1 || echo "DEBUG: tmux start-server failed"
+    # # Source tmux configuration if it exists
+    # if [ -f ~/.tmux.conf ]; then
+    #     # echo "DEBUG: Found ~/.tmux.conf, sourcing it"
+    #     tmux source-file ~/.tmux.conf 2>&1
+    # else
+    #     echo "~/.tmux.conf not found"
+    # fi
+    # echo "DEBUG: reload_bashd completed with $error_count errors"
+
+    if [ -f .venv/bin/activate ]; then
+        source .venv/bin/activate
+    fi
+
+    return $error_count
+}
+alias r="reload_bashd"
+
+# EOF

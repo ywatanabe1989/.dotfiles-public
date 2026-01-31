@@ -1,0 +1,53 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2025-03-08 12:22:45 (ywatanabe)"
+# File: /home/ywatanabe/.dotfiles/.bash.d/all/010_apptainer/apptainer-utils/src/000_envs_user.at.src
+
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+
+################################################################################
+# Apptainer User Configuration
+################################################################################
+
+# Base directories and images
+export APPTAINER_GLOBAL_DIR=${APPTAINER_GLOBAL_DIR-"$HOME/.apptainer"}
+export APPTAINER_LOCAL_DIR=${APPTAINER_LOCAL_DIR-"./.apptainer"}
+export APPTAINER_STATIC_IMAGE=${APPTAINER_STATIC_IMAGE-"image.sif"}
+export APPTAINER_SANDBOX_IMAGE=${APPTAINER_SANDBOX_IMAGE-"image.sandbox"}
+
+# Derived paths
+export APPTAINER_STATIC_IMAGE_GLOBAL_PATH="$APPTAINER_GLOBAL_DIR/$APPTAINER_STATIC_IMAGE"
+export APPTAINER_STATIC_IMAGE_LOCAL_PATH="$APPTAINER_LOCAL_DIR/$APPTAINER_STATIC_IMAGE"
+export APPTAINER_SANDBOX_IMAGE_GLOBAL_PATH="$APPTAINER_GLOBAL_DIR/$APPTAINER_SANDBOX_IMAGE"
+export APPTAINER_SANDBOX_IMAGE_LOCAL_PATH="$APPTAINER_LOCAL_DIR/$APPTAINER_SANDBOX_IMAGE"
+
+# Common options
+export APPTAINER_RUNTIME_OPTIONS=${APPTAINER_RUNTIME_OPTIONS-"--fakeroot --nv"}
+export APPTAINER_WRITABLE_OPTIONS=${APPTAINER_WRITABLE_OPTIONS-"--fakeroot --cleanenv --writable"}
+
+
+
+# #!/bin/bash
+# # Time-stamp: "2024-12-13 07:00:31 (ywatanabe)"
+# # File: ./.dotfiles/.bash.d/all/030_apptainer/apptainer-utils/src/000_envs_user.src
+
+# # Directory structure
+# export APPTAINER_GLOBAL_DIR="$HOME/.apptainer"
+# export APPTAINER_LOCAL_DIR="./.apptainer"
+# export APPTAINER_STATIC_IMAGE="image.sif"
+# export APPTAINER_SANDBOX_IMAGE="image.sandbox"
+
+# # Derived paths
+# export APPTAINER_STATIC_IMAGE_GLOBAL_PATH=$APPTAINER_GLOBAL_DIR/$APPTAINER_STATIC_IMAGE
+# export APPTAINER_STATIC_IMAGE_LOCAL_PATH=$APPTAINER_LOCAL_DIR/$APPTAINER_STATIC_IMAGE
+# export APPTAINER_SANDBOX_IMAGE_GLOBAL_PATH=$APPTAINER_GLOBAL_DIR/$APPTAINER_SANDBOX_IMAGE
+# export APPTAINER_SANDBOX_IMAGE_LOCAL_PATH=$APPTAINER_LOCAL_DIR/$APPTAINER_SANDBOX_IMAGE
+
+# # Common options
+# export APPTAINER_RUNTIME_OPTIONS="--fakeroot --nv"
+
+
+# # EOF
+
+# EOF

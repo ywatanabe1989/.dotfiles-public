@@ -1,0 +1,109 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2025-03-08 12:22:43 (ywatanabe)"
+# File: /home/ywatanabe/.dotfiles/.bash.d/all/010_apptainer/apptainer-utils/src/007_exec_sandbox_local.sh_.at.src
+
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+
+################################################################################
+# Local Sandbox Execution Operations
+################################################################################
+
+function _apptainer_exec_sandbox_local() {
+    [[ "$1" == "-h" ]] && _apptainer_exec_sandbox_local_help && return
+    BIN=$1
+    shift
+    echo_eval "apptainer exec \
+    $APPTAINER_RUNTIME_OPTIONS \
+    $APPTAINER_SANDBOX_IMAGE_LOCAL_PATH \
+    $BIN \
+    $@"
+}
+
+function apptainer_python_sandbox_local() {
+    [[ "$1" == "-h" ]] && _apptainer_python_sandbox_local_help && return
+    _apptainer_exec_sandbox_local python "$@"
+}
+
+function apptainer_ipython_sandbox_local() {
+    [[ "$1" == "-h" ]] && _apptainer_ipython_sandbox_local_help && return
+    _apptainer_exec_sandbox_local ipython "$@"
+}
+
+function apptainer_jupyter_sandbox_local() {
+    [[ "$1" == "-h" ]] && _apptainer_jupyter_sandbox_local_help && return
+    _apptainer_exec_sandbox_local jupyter-notebook "$@"
+}
+
+# Help functions
+function _apptainer_exec_sandbox_local_help() {
+    cat << 'EOF'
+Usage: _apptainer_exec_sandbox_local BINARY [ARGS]
+Run binary in local sandbox container
+EOF
+}
+
+function _apptainer_python_sandbox_local_help() {
+    cat << 'EOF'
+Usage: apy_s [ARGS]
+Run Python in local sandbox container
+EOF
+}
+
+function _apptainer_ipython_sandbox_local_help() {
+    cat << 'EOF'
+Usage: aipy_s [ARGS]
+Run IPython in local sandbox container
+EOF
+}
+
+function _apptainer_jupyter_sandbox_local_help() {
+    cat << 'EOF'
+Usage: ajpy_s [ARGS]
+Run Jupyter in local sandbox container
+EOF
+}
+
+# Aliases
+alias apy_s='apptainer_python_sandbox_local'
+alias aipy_s='apptainer_ipython_sandbox_local'
+alias ajpy_s='apptainer_jupyter_sandbox_local'
+
+
+
+# #!/bin/bash
+# # Time-stamp: "2024-12-13 06:56:07 (ywatanabe)"
+# # File: ./.dotfiles/.bash.d/all/030_apptainer/apptainer-utils/src/008_exec_sandbox_local.sh_.src
+
+# # File: ./.dotfiles/.bash.d/all/030_apptainer/apptainer-utils/src/008_shell_sandbox_local.src
+
+# _apptainer_sandbox_exec() {
+#     [[ "$1" == "-h" ]] && echo "Usage: _apptainer_sandbox_exec BINARY [ARGS] - Run binary in sandbox container" && return
+#     BIN=$1
+#     shift
+#     echo_eval "apptainer exec $APPTAINER_RUNTIME_OPTIONS $APPTAINER_SANDBOX_IMAGE_LOCAL_PATH $BIN $@"
+# }
+
+# # Python-related shortcuts for sandbox
+# apptainer_sandbox_python() {
+#     [[ "$1" == "-h" ]] && echo "Usage: apy_sand [ARGS] - Run Python in sandbox" && return
+#     _apptainer_sandbox_exec python "$@"
+# }
+
+# apptainer_sandbox_ipython() {
+#     [[ "$1" == "-h" ]] && echo "Usage: aipy_sand [ARGS] - Run IPython in sandbox" && return
+#     _apptainer_sandbox_exec ipython "$@"
+# }
+
+# apptainer_sandbox_jupyter() {
+#     [[ "$1" == "-h" ]] && echo "Usage: ajpy_sand [ARGS] - Run Jupyter in sandbox" && return
+#     _apptainer_sandbox_exec jupyter-notebook "$@"
+# }
+
+# # Aliases
+# alias apy_s=apptainer_sandbox_python
+# alias aipy_s=apptainer_sandbox_ipython
+# alias ajpy_s=apptainer_sandbox_jupyter
+
+# EOF

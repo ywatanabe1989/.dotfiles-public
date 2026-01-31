@@ -1,0 +1,28 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2025-06-07 18:20:07 (ywatanabe)"
+# File: /ssh:sp:/home/ywatanabe/.bash.d/all/010_misc.src
+
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# ---------------------------------------
+
+alias x='exit'
+alias o='gio open'
+alias f='find . -name'
+alias t='date +"%Y-%m-%d-%H:%M"'
+alias p='cd ~/proj/'
+alias weather='curl wttr.in/Melbourne'
+# alias r='reload_bashd'
+
+## Others
+alias office='libreoffice'
+alias path='echo -e ${PATH//:/\\n}'
+alias clipboard="{ tee /dev/stderr | xsel --clipboard --input; } 2>&1"
+alias cl='clear'
+alias al="alias"
+# alias cb="{ tee /dev/stderr | xsel --clipboard --input; } 2>&1"
+alias cb="tee >(xsel --clipboard --input)"
+
+## EOF
+
+# EOF

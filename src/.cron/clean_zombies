@@ -1,0 +1,21 @@
+#!/bin/bash
+
+# Check if script is run with sudo
+if [ "$EUID" -ne 0 ]; then
+    echo "Please run as root or with sudo"
+    exit 1
+fi
+
+clean_zombies() {
+    zombies=$(ps aux | awk '{if ($8=="Z") print $2}')
+    for pid in $zombies; do
+        kill -9 "$pid"
+    done
+}
+
+# Run the function
+clean_zombies
+
+# Optionally, you can set this up as a cron job to run periodically
+# For example, to run every hour, add this line to your crontab:
+# 0 * * * * /path/to/clean_zombies.sh

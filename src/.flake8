@@ -1,0 +1,6 @@
+[flake8]
+max-line-length = 99
+ignore=E501, E712, E302, W503, E203, E266, W291, E402, E722, F541, W293, E999
+#E,
+#W503
+#,F,W

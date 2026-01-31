@@ -1,0 +1,15 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2025-05-12 12:48:17 (ywatanabe)"
+# File: /home/ywatanabe/.bash.d/all/010_matlab.src
+
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# ---------------------------------------
+
+## MATLAB
+alias mat='matlab -nodesktop -nojvm -nodisplay'
+alias matlab='matlab2016b'
+alias brainstorm='matlab2016b $HOME/proj/MEG-Ripple/modules/brainstorm.m'
+# alias o='octave'
+
+# EOF

@@ -1,0 +1,254 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2025-12-04 (ywatanabe)"
+# File: /home/ywatanabe/.dotfiles/.bash.d/all/010_claude/010_claude_usage.src
+# Description: Check Claude Code usage for all managed accounts
+#
+# Commands:
+#   cld-usage           Show usage summary for current account (local JSONL)
+#   cld-usage-all       Show usage for all managed accounts
+#   cld-usage-today     Show today's usage
+#   cld-usage-week      Show this week's usage
+#   cld-usage-web       Fetch subscription limits from claude.ai (requires Chrome login)
+
+_CLD_USAGE_PROJECTS_DIR="$HOME/.claude/projects"
+
+# Model pricing per million tokens (USD)
+declare -A _CLD_PRICING_INPUT=(
+    ["claude-sonnet-4-5-20250929"]=3
+    ["claude-opus-4-5-20251101"]=15
+    ["claude-3-5-sonnet-20241022"]=3
+    ["claude-3-5-haiku-20241022"]=1
+    ["default"]=3
+)
+
+declare -A _CLD_PRICING_OUTPUT=(
+    ["claude-sonnet-4-5-20250929"]=15
+    ["claude-opus-4-5-20251101"]=75
+    ["claude-3-5-sonnet-20241022"]=15
+    ["claude-3-5-haiku-20241022"]=5
+    ["default"]=15
+)
+
+_cld_usage_get_price() {
+    local model="$1" type="$2"
+    local price
+    if [[ "$type" == "input" ]]; then
+        price="${_CLD_PRICING_INPUT[$model]:-${_CLD_PRICING_INPUT[default]}}"
+    else
+        price="${_CLD_PRICING_OUTPUT[$model]:-${_CLD_PRICING_OUTPUT[default]}}"
+    fi
+    echo "$price"
+}
+
+_cld_usage_parse_jsonl() {
+    local since_timestamp="${1:-0}"
+    local until_timestamp="${2:-9999999999999}"
+
+    find "$_CLD_USAGE_PROJECTS_DIR" -name "*.jsonl" -type f 2>/dev/null | while read -r file; do
+        grep -h '"usage"' "$file" 2>/dev/null
+    done | jq -s --arg since "$since_timestamp" --arg until "$until_timestamp" '
+        [.[] |
+         select(.timestamp != null) |
+         select((.timestamp | split("T")[0] | gsub("-";"") | tonumber) >= ($since | tonumber)) |
+         select((.timestamp | split("T")[0] | gsub("-";"") | tonumber) <= ($until | tonumber)) |
+         {
+           model: .message.model,
+           input: (.message.usage.input_tokens // 0),
+           output: (.message.usage.output_tokens // 0),
+           cache_create: (.message.usage.cache_creation_input_tokens // 0),
+           cache_read: (.message.usage.cache_read_input_tokens // 0),
+           timestamp: .timestamp
+         }
+        ] |
+        group_by(.model) |
+        map({
+          model: .[0].model,
+          total_input: (map(.input) | add),
+          total_output: (map(.output) | add),
+          total_cache_create: (map(.cache_create) | add),
+          total_cache_read: (map(.cache_read) | add),
+          count: length
+        })
+    ' 2>/dev/null
+}
+
+_cld_usage_format_tokens() {
+    local tokens="$1"
+    if [[ "$tokens" -ge 1000000 ]]; then
+        printf "%.2fM" "$(echo "scale=2; $tokens / 1000000" | bc)"
+    elif [[ "$tokens" -ge 1000 ]]; then
+        printf "%.1fK" "$(echo "scale=1; $tokens / 1000" | bc)"
+    else
+        printf "%d" "$tokens"
+    fi
+}
+
+_cld_usage_calculate_cost() {
+    local model="$1" input="$2" output="$3"
+    local input_price=$(_cld_usage_get_price "$model" "input")
+    local output_price=$(_cld_usage_get_price "$model" "output")
+
+    # Price is per million tokens
+    local cost=$(echo "scale=4; ($input * $input_price + $output * $output_price) / 1000000" | bc)
+    printf "%.2f" "$cost"
+}
+
+_cld_usage_show() {
+    local period="${1:-all}"
+    local since_date=""
+    local until_date=""
+
+    case "$period" in
+        today)
+            since_date=$(date +%Y%m%d)
+            until_date=$(date +%Y%m%d)
+            echo_info "Usage for today ($(date +%Y-%m-%d)):"
+            ;;
+        week)
+            since_date=$(date -d "7 days ago" +%Y%m%d 2>/dev/null || date -v-7d +%Y%m%d)
+            until_date=$(date +%Y%m%d)
+            echo_info "Usage for last 7 days:"
+            ;;
+        month)
+            since_date=$(date -d "30 days ago" +%Y%m%d 2>/dev/null || date -v-30d +%Y%m%d)
+            until_date=$(date +%Y%m%d)
+            echo_info "Usage for last 30 days:"
+            ;;
+        *)
+            since_date="0"
+            until_date="99999999"
+            echo_info "Total usage (all time):"
+            ;;
+    esac
+
+    local current_email=$(_cld_switch_get_current_account 2>/dev/null || echo "unknown")
+    echo_info "Account: $current_email"
+    echo ""
+
+    local data=$(_cld_usage_parse_jsonl "$since_date" "$until_date")
+
+    if [[ -z "$data" || "$data" == "[]" || "$data" == "null" ]]; then
+        echo_warning "No usage data found for this period"
+        return
+    fi
+
+    local total_input=0
+    local total_output=0
+    local total_cost=0
+
+    printf "%-35s %12s %12s %10s\n" "Model" "Input" "Output" "Cost"
+    printf "%-35s %12s %12s %10s\n" "-----------------------------------" "------------" "------------" "----------"
+
+    echo "$data" | jq -r '.[] | "\(.model)\t\(.total_input)\t\(.total_output)"' 2>/dev/null | while IFS=$'\t' read -r model input output; do
+        [[ -z "$model" || "$model" == "null" ]] && continue
+
+        local cost=$(_cld_usage_calculate_cost "$model" "$input" "$output")
+        local input_fmt=$(_cld_usage_format_tokens "$input")
+        local output_fmt=$(_cld_usage_format_tokens "$output")
+
+        printf "%-35s %12s %12s %9s\n" "$model" "$input_fmt" "$output_fmt" "\$$cost"
+
+        # Accumulate totals (note: this runs in subshell, totals won't persist)
+    done
+
+    # Calculate totals separately
+    local totals=$(echo "$data" | jq -r '[.[] | {input: .total_input, output: .total_output}] | {total_input: (map(.input) | add), total_output: (map(.output) | add)}')
+    total_input=$(echo "$totals" | jq -r '.total_input // 0')
+    total_output=$(echo "$totals" | jq -r '.total_output // 0')
+
+    # Estimate total cost (using default pricing for simplicity)
+    total_cost=$(echo "scale=2; ($total_input * 3 + $total_output * 15) / 1000000" | bc)
+
+    echo ""
+    printf "%-35s %12s %12s %9s\n" "TOTAL" "$(_cld_usage_format_tokens $total_input)" "$(_cld_usage_format_tokens $total_output)" "\$$total_cost"
+}
+
+_cld_usage_all_accounts() {
+    local period="${1:-all}"
+
+    if [[ ! -f "$_CLD_SWITCH_SEQUENCE_FILE" ]]; then
+        echo_warning "No managed accounts. Run cld-switch-add first."
+        _cld_usage_show "$period"
+        return
+    fi
+
+    local original_account=$(_cld_switch_get_current_account)
+    local accounts=$(jq -r '.accounts | to_entries[] | "\(.key)\t\(.value.email)"' "$_CLD_SWITCH_SEQUENCE_FILE" 2>/dev/null)
+
+    echo "============================================================"
+    echo "Claude Code Usage Report - All Accounts"
+    echo "============================================================"
+    echo ""
+
+    # For now, just show current account since switching requires credentials
+    # Full multi-account support would need to switch accounts which is disruptive
+    echo_warning "Note: Currently showing usage from local JSONL files only."
+    echo_warning "This reflects usage from the current machine, not per-account totals."
+    echo ""
+
+    echo "$accounts" | while IFS=$'\t' read -r num email; do
+        echo "------------------------------------------------------------"
+        echo_success "Account $num: $email"
+        echo "------------------------------------------------------------"
+    done
+
+    echo ""
+    _cld_usage_show "$period"
+}
+
+_cld_usage_live() {
+    echo_info "For live usage monitoring, use: npx ccusage@latest blocks --live"
+    echo_info "Install: npm install -g ccusage"
+}
+
+# Quick usage summary using /cost command approach
+_cld_usage_quick() {
+    echo_info "Quick usage check:"
+    echo_info "  In Claude Code session, type: /cost"
+    echo_info "  Or check: https://claude.ai/settings/billing"
+}
+
+# Fetch subscription usage from web (requires Chrome with active session)
+_cld_usage_web() {
+    local script_path="$HOME/.claude/to_claude/bin/cld_usage_web.py"
+    local json_flag=""
+
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            --json|-j) json_flag="--json"; shift ;;
+            *) shift ;;
+        esac
+    done
+
+    if [[ ! -f "$script_path" ]]; then
+        echo_error "Web usage script not found: $script_path"
+        echo_info "This script fetches subscription limits from claude.ai/settings/usage"
+        return 1
+    fi
+
+    # Check for playwright
+    if ! python3 -c "import playwright" 2>/dev/null; then
+        echo_error "playwright not installed"
+        echo_info "Install with: pip install playwright && playwright install chromium"
+        return 1
+    fi
+
+    echo_info "Fetching subscription usage from claude.ai..."
+    echo_info "(Using Chrome profile for authentication)"
+    echo ""
+
+    python3 "$script_path" $json_flag
+}
+
+# Aliases
+alias cld-usage="_cld_usage_show"
+alias cld-usage-today="_cld_usage_show today"
+alias cld-usage-week="_cld_usage_show week"
+alias cld-usage-month="_cld_usage_show month"
+alias cld-usage-all="_cld_usage_all_accounts"
+alias cld-usage-live="_cld_usage_live"
+alias cld-usage-quick="_cld_usage_quick"
+alias cld-usage-web="_cld_usage_web"
+
+# EOF

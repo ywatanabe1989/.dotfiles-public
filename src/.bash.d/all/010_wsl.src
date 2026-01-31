@@ -1,0 +1,229 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2025-10-26 15:28:05 (ywatanabe)"
+# File: /home/ywatanabe/.dotfiles/.bash.d/all/010_wsl.src
+
+# shellcheck disable=SC2034
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# ---------------------------------------
+
+# Only run on Linux/WSL
+if ! is_linux; then
+    return 0 2>/dev/null || exit 0
+fi
+
+# Bash completion (Linux only)
+if [[ -d /etc/bash_completion.d ]]; then
+    for f in /etc/bash_completion.d/*; do
+        [[ -f "$f" ]] && source "$f"
+    done
+fi
+
+if command -v ip &>/dev/null; then
+    if_host ywata-note-win export WINDOWS_HOST_IP="$(ip route | grep default | awk '{print $3}')" &>/dev/null
+fi
+
+w() {
+    local TGT="${1:-.}"
+    explorer.exe "$(wslpath -w "$TGT")"
+}
+
+alias cdw="cd /win"
+
+# mkdir -p ~/.win-bin
+# ln -s "/mnt/c/Windows/System32/cmd.exe" ~/.win-bin/cmd.exe
+# ln -s "/mnt/c/Windows/explorer.exe" ~/.win-bin/explorer.exe
+# ln -s "/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe" ~/.win-bin/powershell.exe
+# ln -s "/mnt/c/Program Files/Google/Chrome/Application/chrome.exe" ~/.win-bin/chrome.exe
+# ln -s "/mnt/c/Program Files/PDFStudio2020/pdfstudio2020.exe" ~/.win-bin/pdfstudio.exe
+# ln -s "/mnt/c/Program Files/PDFStudio2020/pdfstudio2020.exe" ~/.win-bin/pdfstudio.exe
+# ln -s "/mnt/c/Program Files (x86)/SigmaPlot/SPW12/Spw.exe" ~/.win-bin/sigmaplot.exe
+alias taskmanager="cmd.exe /c start taskmgr"
+
+# sudo apt install gnome-tweaks -y
+export GTK_THEME=Adwaita:light
+export QT_STYLE_OVERRIDE=Fusion
+
+# sudo mkdir /mnt/ubuntu2004
+# sudo mount -t drvfs '\\wsl.localhost\Ubuntu-20.04\home\ywatanabe' /mnt/ubuntu2004
+
+take_photo() {
+    ## Web Camera Installation
+    # ```powershell
+    # # attach-webcam.ps1
+    # $busid = (usbipd list | Select-String "HD Pro Webcam C920" | ForEach-Object { $_.ToString().Split()[0] })
+    # if ($busid) {
+    #     usbipd attach --wsl --busid $busid
+    # }
+    # ```
+    # cd $:\path\to\attach-webcam.ps1-directory\
+    # PowerShell -ExecutionPolicy Bypass -File "attach-webcam.ps1"
+    # Create shortcut and place to `shell:startup`
+
+    local countdown=0
+    local output_file=""
+    local positional_args=()
+
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+        -c | --countdown)
+            countdown="$2"
+            shift 2
+            ;;
+        -h | --help)
+            echo "Usage: take_photo [-c|--countdown SECONDS] [OUTPUT_FILE]"
+            echo "  -c, --countdown  Countdown seconds (default: 3)"
+            echo "  -h, --help       Show this help"
+            return 0
+            ;;
+        *)
+            positional_args+=("$1")
+            shift
+            ;;
+        esac
+    done
+
+    if [ ${#positional_args[@]} -gt 0 ]; then
+        output_file="${positional_args[0]}"
+    fi
+    output_file="${output_file:-photo_$(date +%Y%m%d_%H%M%S).jpg}"
+
+    for ((ii = countdown; ii >= 1; ii--)); do
+        echo "$ii..."
+        sleep 1
+    done
+    echo "Snap!"
+
+    ffmpeg -f v4l2 -i /dev/video0 -vframes 1 "$output_file" -loglevel quiet
+    if [ -f "$output_file" ]; then
+        echo "Photo saved: $output_file"
+    else
+        echo "Photo not saved"
+    fi
+}
+
+take_photos() {
+    local countdown=3
+    local interval=1
+    local duration=10
+    local output_prefix=""
+    local positional_args=()
+
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+        -c | --countdown)
+            countdown="$2"
+            shift 2
+            ;;
+        -i | --interval)
+            interval="$2"
+            shift 2
+            ;;
+        -d | --duration)
+            duration="$2"
+            shift 2
+            ;;
+        -h | --help)
+            echo "Usage: take_photos [-c|--countdown SECONDS] [-i|--interval SECONDS] [-d|--duration SECONDS] [OUTPUT_PREFIX]"
+            echo "  -c, --countdown  Countdown seconds (default: 3)"
+            echo "  -i, --interval   Interval between photos (default: 1)"
+            echo "  -d, --duration   Total duration (default: 10)"
+            echo "  -h, --help       Show this help"
+            return 0
+            ;;
+        *)
+            positional_args+=("$1")
+            shift
+            ;;
+        esac
+    done
+
+    if [ ${#positional_args[@]} -gt 0 ]; then
+        output_prefix="${positional_args[0]}"
+    fi
+    output_prefix="${output_prefix:-photos_$(date +%Y%m%d_%H%M%S)}"
+
+    for ((ii = countdown; ii >= 1; ii--)); do
+        echo "$ii..."
+        sleep 1
+    done
+    echo "Starting photo sequence..."
+
+    local end_time=$(($(date +%s) + duration))
+    local photo_count=1
+
+    while [ $(date +%s) -lt $end_time ]; do
+        local output_file="${output_prefix}_$(printf "%03d" $photo_count).jpg"
+        ffmpeg -f v4l2 -i /dev/video0 -vframes 1 "$output_file" -loglevel quiet
+        if [ -f "$output_file" ]; then
+            echo "Photo $photo_count saved: $output_file"
+        fi
+        ((photo_count++))
+        sleep $interval
+    done
+
+    echo "Photo sequence complete"
+}
+
+take_movie() {
+    local countdown=0
+    local duration=""
+    local output_file=""
+
+    ## Web Camera Installation
+    # ```powershell
+    # # attach-webcam.ps1
+    # $busid = (usbipd list | Select-String "HD Pro Webcam C920" | ForEach-Object { $_.ToString().Split()[0] })
+    # if ($busid) {
+    #     usbipd attach --wsl --busid $busid
+    # }
+    # ```
+    # cd $:\path\to\attach-webcam.ps1-directory\
+    # PowerShell -ExecutionPolicy Bypass -File "attach-webcam.ps1"
+    # Create shortcut and place to `shell:startup`
+
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+        -c | --countdown)
+            countdown="$2"
+            shift 2
+            ;;
+        -h | --help)
+            echo "Usage: take_movie [-c|--countdown SECONDS] [DURATION] [OUTPUT_FILE]"
+            echo "  -c, --countdown  Countdown seconds (default: 3)"
+            echo "  -h, --help       Show this help"
+            echo "  DURATION         Recording duration in seconds (default: 10)"
+            return 0
+            ;;
+        *)
+            if [ -z "$duration" ]; then
+                duration="$1"
+            else
+                output_file="$1"
+            fi
+            shift
+            ;;
+        esac
+    done
+
+    countdown="${countdown:-3}"
+    duration="${duration:-10}"
+    output_file="${output_file:-movie_$(date +%Y%m%d_%H%M%S).mp4}"
+
+    for ((ii = countdown; ii >= 1; ii--)); do
+        echo "$ii..."
+        sleep 1
+    done
+    echo "Recording... Press Ctrl+C to stop early"
+
+    ffmpeg -f v4l2 -i /dev/video0 -t "$duration" -c:v libx264 -pix_fmt yuv420p "$output_file" -loglevel quiet
+    if [ -f "$output_file" ]; then
+        echo "Movie saved: $output_file"
+    else
+        echo "Recording stopped"
+    fi
+}
+
+# ffplay /dev/video0
+
+# EOF

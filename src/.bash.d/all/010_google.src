@@ -1,0 +1,34 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2025-05-19 21:11:46 (ywatanabe)"
+# File: /ssh:sp:/home/ywatanabe/.bash.d/all/010_google.src
+
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# ---------------------------------------
+
+google() {
+    # Base URL for Google Japan search
+    url='https://google.co.jp/search?q='
+
+    # Capture all arguments as keywords
+    keywords="$@"
+
+    # Iterate through each keyword and append to the URL
+    for key in "$@"; do
+        url="${url}${key}+"
+    done
+
+    # Remove the trailing '+' from the URL
+    url="${url%+}"
+
+    # Print the final URL
+    echo $url
+
+    # Open the URL in Google Chrome
+    # Use 'google-chrome' for the Chrome executable on Linux
+    # Use 'open -a "Google Chrome"' for macOS
+    google-chrome "$url" &
+    # open -a "Google Chrome" "$url"  # For macOS
+}
+
+# EOF

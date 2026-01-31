@@ -1,0 +1,90 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2025-05-30 16:32:20 (ywatanabe)"
+# File: /ssh:sp:/home/ywatanabe/.bash.d/all/010_git/git_completion.src
+
+# shellcheck disable=SC2034
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# ---------------------------------------
+
+# Skip if git not installed
+command -v git &>/dev/null || return 0
+
+# **git_completion.src** - Missing completion functions:
+# ```bash
+# # Check if completion exists before using
+# if type _git_status >/dev/null 2>&1; then
+#     __git_complete gst _git_status
+# fi
+# ```
+
+# Ensure Git completion is available
+if [ -f /usr/share/bash-completion/completions/git ]; then
+    source /usr/share/bash-completion/completions/git
+elif [ -f /etc/bash_completion.d/git ]; then
+    source /etc/bash_completion.d/git
+elif [ -f /opt/homebrew/etc/bash_completion.d/git-completion.bash ]; then
+    # macOS with Homebrew
+    source /opt/homebrew/etc/bash_completion.d/git-completion.bash
+elif [ -f /usr/local/etc/bash_completion.d/git-completion.bash ]; then
+    # macOS with Homebrew (Intel)
+    source /usr/local/etc/bash_completion.d/git-completion.bash
+fi
+
+# Make sure __git_complete function exists
+if ! type __git_complete >/dev/null 2>&1; then
+    # Define a simple version if it doesn't exist
+    __git_complete() {
+        local wrapper="$1"
+        local completion="$2"
+        complete -o bashdefault -o default -o nospace -F "$completion" "$wrapper"
+    }
+fi
+
+# Set up Git aliases for common commands (only if not already set)
+if ! git config --global alias.st >/dev/null 2>&1; then
+    git config --global alias.st 'status -s'
+    git config --global alias.br 'branch'
+    git config --global alias.co 'checkout'
+    git config --global alias.sw 'switch'
+    git config --global alias.cf 'config'
+    git config --global alias.cm 'commit -m'
+    git config --global alias.a '!git add'
+    git config --global alias.ac '!git add . && git commit -m'
+    git config --global alias.lg 'log --graph --date=human --decorate=short --pretty=format:"%Cgreen%h %Creset%cd %Cblue%cn %Cred%d %Creset%s"'
+    git config --global alias.unstage 'restore --staged'
+    git config --global alias.last 'log -1 HEAD'
+fi
+
+# Complete Git command aliases
+if type __git_complete >/dev/null 2>&1; then
+    type __git_main >/dev/null 2>&1 && __git_complete g __git_main
+    type _git_status >/dev/null 2>&1 && __git_complete gst _git_status
+    type _git_branch >/dev/null 2>&1 && __git_complete gbr _git_branch
+    type _git_checkout >/dev/null 2>&1 && __git_complete gco _git_checkout
+    type _git_switch >/dev/null 2>&1 && __git_complete gsw _git_switch
+    type _git_config >/dev/null 2>&1 && __git_complete gcf _git_config
+    type _git_commit >/dev/null 2>&1 && __git_complete gcm _git_commit
+    type _git_commit >/dev/null 2>&1 && __git_complete gac _git_commit
+    type _git_log >/dev/null 2>&1 && __git_complete glg _git_log
+    type _git_diff >/dev/null 2>&1 && __git_complete gdf _git_diff
+    type _git_restore >/dev/null 2>&1 && __git_complete gun _git_restore
+
+    # Complete custom utility functions
+    type _git_branch >/dev/null 2>&1 && __git_complete git_merge_and_delete _git_branch
+    type _git_branch >/dev/null 2>&1 && __git_complete gmd _git_branch
+    type _git_branch >/dev/null 2>&1 && __git_complete git_merge_and_delete_into _git_branch
+    type _git_branch >/dev/null 2>&1 && __git_complete gmdt _git_branch
+    type _git_checkout >/dev/null 2>&1 && __git_complete co _git_checkout
+    type _git_checkout >/dev/null 2>&1 && __git_complete checkout _git_checkout
+    type _git_stash >/dev/null 2>&1 && __git_complete stash _git_stash
+
+    # Complete special utilities
+    type _git_add >/dev/null 2>&1 && __git_complete git_track _git_add
+    type _git_add >/dev/null 2>&1 && __git_complete track _git_add
+    type _git_rm >/dev/null 2>&1 && __git_complete git_untrack _git_rm
+    type _git_rm >/dev/null 2>&1 && __git_complete untrack _git_rm
+fi
+
+return 0
+# EOF

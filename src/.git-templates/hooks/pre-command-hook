@@ -1,0 +1,17 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2025-04-05 15:49:01 (ywatanabe)"
+# File: /home/ywatanabe/.git-templates/hooks/pre-command-hook
+
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+
+# Check for and remove stale .git/index.lock files
+if [ -f .git/index.lock ] && ! pgrep -f "^git" > /dev/null; then
+  echo "Removing stale .git/index.lock file"
+  rm -f .git/index.lock >/dev/null 2>&1
+fi
+
+exit 0
+
+# EOF

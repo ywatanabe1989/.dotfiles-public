@@ -1,0 +1,134 @@
+#!/bin/bash
+# Time-stamp: "2025-01-10 20:42:39 (ywatanabe)"
+# File: ./.dotfiles/.win-bin/w
+
+set -e
+
+TEMP_DIR="/mnt/c/Users/wyusu/Documents/wsl_temp"
+LOG_FILE="${0%.sh}.log"
+
+usage() {
+    echo "Usage: $0 [file(s)]"
+    echo "Options:"
+    echo " file(s)  Path to file(s) to open (supports wildcards)"
+    echo " -h, --help    Display this help message"
+    exit 1
+}
+
+open_jnb_file() {
+    local input_file="$1"
+    local filename=$(basename "$input_file")
+    local temp_file="$TEMP_DIR/${filename%.*}_$(date +%Y%m%d_%H%M%S).jnb"
+
+    cp -v "$input_file" "$temp_file"
+    echo "Opening in 3 seconds..."
+    sleep 3
+
+    wslview "$temp_file"
+    read -p "Press Enter when finished..."
+    cp "$temp_file" "$input_file"
+    rm "$temp_file"
+}
+
+main() {
+    mkdir -p "$TEMP_DIR"
+
+    [[ "$1" == "-h" || "$1" == "--help" ]] && usage
+    [[ $# -eq 0 ]] && wslview && exit 0
+
+    for file in "$@"; do
+        if [[ "${file,,}" == *.jnb ]]; then
+            open_jnb_file "$file"
+        else
+            wslview "$file"
+        fi
+    done
+}
+
+main "$@" 2>&1 | tee "$LOG_FILE"
+# #!/bin/bash
+# # /home/ywatanabe/.dotfiles/.win-bin/w
+
+# set -e
+
+# TEMP_DIR="/mnt/c/Users/wyusu/Documents/wsl_temp"
+# LOG_FILE="${0%.sh}.log"
+
+# usage() {
+#     echo "Usage: $0 [file]"
+#     echo
+#     echo "Options:"
+#     echo " file    Path to the file to open (optional)"
+#     echo " -h, --help    Display this help message"
+#     echo
+#     echo "Example:"
+#     echo " $0 document.jnb"
+#     echo " $0 image.png"
+#     exit 1
+# }
+
+# open_jnb_file() {
+#     local input_file="$1"
+#     local filename=$(basename "$input_file")
+#     local temp_file="$TEMP_DIR/${filename%.*}_$(date +%Y-%m-%d_%H-%M-%S).jnb"
+
+#     cp -v "$input_file" "$temp_file"
+
+#     for countdown in {3..1}; do
+#         echo "Opening in $countdown seconds..."
+#         sleep 1
+#     done
+
+#     wslview "$temp_file"
+#     read -p "Press Enter when finished..."
+#     cp "$temp_file" "$input_file"
+#     rm "$temp_file"
+# }
+
+# main() {
+#     mkdir -p "$TEMP_DIR"
+
+#     if [[ "$1" == "-h" || "$1" == "--help" ]]; then
+#         usage
+#     fi
+
+#     if [[ $# -eq 0 ]]; then
+#         echo "No file specified. Opening default view."
+#         wslview
+#     elif [[ "${1,,}" == *.jnb ]]; then
+#         open_jnb_file "$1"
+#     else
+#         wslview "$@"
+#     fi
+# }
+
+# {
+#     main "$@"
+# } 2>&1 | tee "$LOG_FILE"
+
+# # EOF
+
+# # #!/bin/bash
+# # # /home/ywatanabe/.dotfiles/.win-bin/w
+
+# # TEMP_DIR="/mnt/c/Users/wyusu/Documents/wsl_temp"
+# # mkdir -p "$TEMP_DIR"
+
+# # if [[ "${1,,}" == *.jnb ]]; then
+# #     cp -v "$1" "$TEMP_DIR/"
+# #     filename=$(basename "$1")
+# #     echo $filename
+
+# #     # Countdown
+# #     for i in {3..1}; do
+# #         echo "Opening in $i seconds..."
+# #         sleep 1
+# #     done
+# #     tmp_filename="$TEMP_DIR/$filename"(-randomnumberheer)
+# #     wslview "$tmp_filename"
+# #     read -p "Press Enter when finished..."
+# #     cp "$tmp_filename" "$1"
+# #     rm "$tmp_filename"
+# # else
+# #     wslview "$@"
+# # fi

@@ -1,0 +1,11 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2025-11-23 23:16:12 (ywatanabe)"
+# File: /home/ywatanabe/.bash.d/all/010_whisper.src
+
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# ---------------------------------------
+
+export PATH="$HOME/.emacs.d/.cache/whisper.cpp/build/bin:$PATH"
+
+# EOF

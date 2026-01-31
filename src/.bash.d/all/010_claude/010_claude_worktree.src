@@ -1,0 +1,422 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2026-01-04 12:51:32 (ywatanabe)"
+# File: /home/ywatanabe/.dotfiles/.bash.d/all/010_claude/010_claude_worktree.src
+
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# ---------------------------------------
+
+# Description: Git worktree management with symlink support for Claude Code sessions
+
+# Tracking file for worktree symlinks (to identify them during cleanup)
+_CLD_WORKTREE_TRACKING_FILE=".claude-worktree-symlinks"
+
+# Helper: Sanitize worktree name (replace / with - for path safety)
+_cld_worktree_sanitize_name() {
+    local name=$1
+    # Replace / with - to handle branch names like feature/foo
+    echo "${name//\//-}"
+}
+
+# Helper: Ensure worktree name and tracking file are in .gitignore
+_cld_worktree_ensure_gitignore() {
+    local git_root=$1
+    local worktree_name=$2
+    local gitignore="$git_root/.gitignore"
+    local pattern="/$worktree_name"
+    local tracking_pattern="/$_CLD_WORKTREE_TRACKING_FILE"
+
+    if [[ ! -f "$gitignore" ]]; then
+        {
+            echo "$tracking_pattern"
+            echo "$pattern"
+        } >"$gitignore"
+        return 0
+    fi
+
+    # Add tracking file pattern if not present
+    grep -qxF "$tracking_pattern" "$gitignore" 2>/dev/null || echo "$tracking_pattern" >>"$gitignore"
+
+    # Add worktree symlink pattern if not present
+    grep -qxF "$pattern" "$gitignore" 2>/dev/null || {
+        echo "# Claude worktree symlink" >>"$gitignore"
+        echo "$pattern" >>"$gitignore"
+    }
+}
+
+# Helper: Track symlink in tracking file
+_cld_worktree_track_symlink() {
+    local git_root=$1
+    local worktree_name=$2
+    local tracking_file="$git_root/$_CLD_WORKTREE_TRACKING_FILE"
+
+    # Add to tracking file if not already there
+    if [[ ! -f "$tracking_file" ]] || ! grep -qxF "$worktree_name" "$tracking_file" 2>/dev/null; then
+        echo "$worktree_name" >>"$tracking_file"
+    fi
+}
+
+# Helper: Remove from tracking file
+_cld_worktree_untrack_symlink() {
+    local git_root=$1
+    local worktree_name=$2
+    local tracking_file="$git_root/$_CLD_WORKTREE_TRACKING_FILE"
+
+    if [[ -f "$tracking_file" ]]; then
+        local tmp_file
+        tmp_file=$(mktemp)
+        grep -vxF "$worktree_name" "$tracking_file" >"$tmp_file" 2>/dev/null || true
+        mv "$tmp_file" "$tracking_file"
+        # Remove tracking file if empty
+        [[ ! -s "$tracking_file" ]] && rm -f "$tracking_file"
+    fi
+}
+
+# Helper: Create symlink in project root
+_cld_worktree_create_symlink() {
+    local git_root=$1
+    local worktree_path=$2
+    local worktree_name=$3
+    local symlink_path="$git_root/$worktree_name"
+
+    # Ensure gitignore is set up
+    _cld_worktree_ensure_gitignore "$git_root" "$worktree_name"
+
+    # Track symlink
+    _cld_worktree_track_symlink "$git_root" "$worktree_name"
+
+    # Create symlink
+    if [[ -L "$symlink_path" ]]; then
+        rm "$symlink_path"
+    fi
+    ln -s "$worktree_path" "$symlink_path"
+    echo_info "Created symlink: $worktree_name -> $worktree_path"
+}
+
+# Helper: Remove symlink from project root
+_cld_worktree_remove_symlink() {
+    local git_root=$1
+    local worktree_name=$2
+    local symlink_path="$git_root/$worktree_name"
+
+    if [[ -L "$symlink_path" ]]; then
+        rm "$symlink_path"
+        _cld_worktree_untrack_symlink "$git_root" "$worktree_name"
+        echo_info "Removed symlink: $worktree_name"
+    fi
+}
+
+# Silent cleanup for use in _cld_start_session (no output unless issues found)
+_cld_worktree_cleanup_silent() {
+    git rev-parse --git-dir >/dev/null 2>&1 || return 0
+
+    local git_root
+    git_root=$(git rev-parse --show-toplevel) || return 0
+    local tracking_file="$git_root/$_CLD_WORKTREE_TRACKING_FILE"
+
+    [[ -f "$tracking_file" ]] || return 0
+
+    # Check each tracked symlink
+    while IFS= read -r name; do
+        [[ -z "$name" ]] && continue
+        local symlink_path="$git_root/$name"
+
+        if [[ -L "$symlink_path" ]]; then
+            local target
+            target=$(readlink "$symlink_path")
+            if [[ ! -d "$target" ]] || ! git -C "$target" rev-parse --git-dir >/dev/null 2>&1; then
+                rm "$symlink_path" 2>/dev/null
+                _cld_worktree_untrack_symlink "$git_root" "$name"
+            fi
+        else
+            # Symlink doesn't exist, remove from tracking
+            _cld_worktree_untrack_symlink "$git_root" "$name"
+        fi
+    done <"$tracking_file"
+
+    # Silently prune git worktree metadata
+    git worktree prune 2>/dev/null
+}
+
+# Cleanup broken symlinks and orphaned worktree symlinks
+_cld_worktree_cleanup() {
+    local arg=$1
+
+    if [[ "$arg" == "-h" ]] || [[ "$arg" == "--help" ]]; then
+        echo_info "Usage: cldw-cleanup"
+        echo_info ""
+        echo_info "Clean up broken worktree symlinks in the project root."
+        echo_info "Removes symlinks that point to non-existent worktrees."
+        return 0
+    fi
+
+    if ! git rev-parse --git-dir >/dev/null 2>&1; then
+        echo_error "Not in a git repository"
+        return 1
+    fi
+
+    local git_root
+    git_root=$(git rev-parse --show-toplevel)
+    local tracking_file="$git_root/$_CLD_WORKTREE_TRACKING_FILE"
+    local cleaned=0
+
+    if [[ ! -f "$tracking_file" ]]; then
+        echo_info "No worktree symlinks tracked"
+        git worktree prune
+        return 0
+    fi
+
+    # Check each tracked symlink
+    while IFS= read -r name; do
+        [[ -z "$name" ]] && continue
+        local symlink_path="$git_root/$name"
+
+        if [[ -L "$symlink_path" ]]; then
+            local target
+            target=$(readlink "$symlink_path")
+            if [[ ! -d "$target" ]]; then
+                echo_info "Removing broken symlink: $name"
+                rm "$symlink_path"
+                _cld_worktree_untrack_symlink "$git_root" "$name"
+                ((cleaned++))
+            elif ! git -C "$target" rev-parse --git-dir >/dev/null 2>&1; then
+                echo_info "Removing orphaned symlink (not a git worktree): $name"
+                rm "$symlink_path"
+                _cld_worktree_untrack_symlink "$git_root" "$name"
+                ((cleaned++))
+            fi
+        else
+            echo_info "Removing missing symlink from tracking: $name"
+            _cld_worktree_untrack_symlink "$git_root" "$name"
+            ((cleaned++))
+        fi
+    done <"$tracking_file"
+
+    if [[ $cleaned -eq 0 ]]; then
+        echo_info "No broken symlinks found"
+    else
+        echo_success "Cleaned up $cleaned symlink(s)"
+    fi
+
+    echo_info "Pruning git worktree metadata..."
+    git worktree prune
+}
+
+_cld_worktree_list() {
+    local arg=$1
+    local show_all=false
+
+    if [[ "$arg" == "-h" ]] || [[ "$arg" == "--help" ]]; then
+        echo_info "Usage: cldw-ls [--all]"
+        echo_info ""
+        echo_info "List git worktrees, symlinks, and Claude-specific worktrees."
+        echo_info ""
+        echo_info "Options:"
+        echo_info "  --all, -a    Show all worktrees (default: current branch only)"
+        return 0
+    fi
+
+    if [[ "$arg" == "--all" ]] || [[ "$arg" == "-a" ]]; then
+        show_all=true
+    fi
+
+    if ! git rev-parse --git-dir >/dev/null 2>&1; then
+        echo_error "Not in a git repository"
+        return 1
+    fi
+
+    local git_root
+    git_root=$(git rev-parse --show-toplevel)
+    local current_branch
+    current_branch=$(git branch --show-current 2>/dev/null)
+    local tracking_file="$git_root/$_CLD_WORKTREE_TRACKING_FILE"
+
+    if [[ "$show_all" == true ]]; then
+        local entries=()
+        while IFS= read -r line; do
+            local worktree_path
+            worktree_path=$(echo "$line" | awk '{print $1}')
+            if [[ -d "$worktree_path" ]]; then
+                local timestamp
+                timestamp=$(stat -c '%y' "$worktree_path" 2>/dev/null | cut -d' ' -f1,2 | cut -d'.' -f1)
+                local branch
+                branch=$(echo "$line" | sed 's/.*\[\(.*\)\].*/\1/')
+                local is_main=0
+                [[ "$worktree_path" == "$git_root" ]] && is_main=1
+                entries+=("$timestamp|$branch|$is_main")
+            fi
+        done < <(git worktree list)
+
+        while IFS= read -r entry; do
+            IFS='|' read -r timestamp branch is_main <<< "$entry"
+            if [[ $is_main -eq 1 ]]; then
+                printf "\e[32m%-50s %s\e[0m\n" "$branch" "$timestamp"
+            else
+                printf "\e[36m%-50s %s\e[0m\n" "$branch" "$timestamp"
+            fi
+        done < <(printf '%s\n' "${entries[@]}" | sort -r)
+    else
+        local entries=()
+        while IFS= read -r line; do
+            local worktree_path
+            worktree_path=$(echo "$line" | awk '{print $1}')
+            if [[ -d "$worktree_path" ]]; then
+                local timestamp
+                timestamp=$(stat -c '%y' "$worktree_path" 2>/dev/null | cut -d' ' -f1,2 | cut -d'.' -f1)
+                local branch
+                branch=$(echo "$line" | sed 's/.*\[\(.*\)\].*/\1/')
+                local is_main=0
+                [[ "$worktree_path" == "$git_root" ]] && is_main=1
+                entries+=("$timestamp|$branch|$is_main")
+            fi
+        done < <(git worktree list)
+
+        while IFS= read -r entry; do
+            IFS='|' read -r timestamp branch is_main <<< "$entry"
+            if [[ $is_main -eq 1 ]]; then
+                printf "\e[32m%-50s %s\e[0m\n" "$branch" "$timestamp"
+            else
+                printf "\e[36m%-50s %s\e[0m\n" "$branch" "$timestamp"
+            fi
+        done < <(printf '%s\n' "${entries[@]}" | sort -r)
+    fi
+}
+
+_cld_worktree_remove() {
+    local worktree_name=$1
+
+    if [[ "$worktree_name" == "-h" ]] || [[ "$worktree_name" == "--help" ]] || [[ -z "$worktree_name" ]]; then
+        echo_info "Usage: cldw-rm <worktree-name>"
+        echo_info ""
+        echo_info "Remove a Claude worktree and its symlink."
+        echo_info ""
+        echo_info "Arguments:"
+        echo_info "  worktree-name    Name of the worktree to remove (can include /)"
+        echo_info ""
+        echo_info "Example:"
+        echo_info "  cldw-rm feature-demo       # Removes worktree and symlink"
+        echo_info "  cldw-rm feature/csv-fix    # Handles slashes correctly"
+        return 0
+    fi
+
+    if ! git rev-parse --git-dir >/dev/null 2>&1; then
+        echo_error "Not in a git repository"
+        return 1
+    fi
+
+    local git_root
+    git_root=$(git rev-parse --show-toplevel)
+    local project_name
+    project_name=$(basename "$git_root")
+    local project_root
+    project_root=$(dirname "$git_root")
+
+    # Sanitize name for path (replace / with -)
+    local safe_name
+    safe_name=$(_cld_worktree_sanitize_name "$worktree_name")
+    local worktree_path="$project_root/.claude-worktree/${project_name}-${safe_name}"
+
+    # Remove symlink first (use sanitized name)
+    _cld_worktree_remove_symlink "$git_root" "$safe_name"
+
+    if [[ -d "$worktree_path" ]]; then
+        echo_info "Removing worktree: $worktree_path"
+        git worktree remove "$worktree_path"
+    else
+        echo_warning "Worktree not found: $worktree_path"
+        echo_info "Pruning stale worktree references..."
+        git worktree prune
+    fi
+}
+
+_cld_worktree_session() {
+    local worktree_name=$1
+    local base_branch=${2:-$(git branch --show-current 2>/dev/null || echo "main")}
+
+    if [[ "$worktree_name" == "-h" ]] || [[ "$worktree_name" == "--help" ]] || [[ -z "$worktree_name" ]]; then
+        echo_info "Usage: cldw <worktree-name> [base-branch]"
+        echo_info ""
+        echo_info "Create a git worktree with symlink and start Claude Code session."
+        echo_info ""
+        echo_info "Arguments:"
+        echo_info "  worktree-name    Name for the worktree (can include /, e.g., feature/foo)"
+        echo_info "  base-branch      Base branch to branch from (default: current or main)"
+        echo_info ""
+        echo_info "Features:"
+        echo_info "  - Creates worktree in <project_root>/.claude-worktree/<project>-<name>/"
+        echo_info "  - Slashes in name are converted to dashes for paths"
+        echo_info "  - Creates symlink at <git_root>/<safe-name>"
+        echo_info "  - Automatically adds /<safe-name> to .gitignore"
+        echo_info "  - Symlinks .venv from original if available (Python projects)"
+        echo_info ""
+        echo_info "Examples:"
+        echo_info "  cldw feature/demo main   # Creates branch feature/demo, dir feature-demo"
+        echo_info "  cldw bugfix develop      # Creates worktree and 'bugfix' symlink"
+        echo_info ""
+        echo_info "Other commands:"
+        echo_info "  cldw-ls [--all]          # List worktrees (--all for all)"
+        echo_info "  cldw-rm <name>           # Remove a worktree and its symlink"
+        echo_info "  cldw-cleanup             # Clean up broken symlinks"
+        return 0
+    fi
+
+    if ! git rev-parse --git-dir >/dev/null 2>&1; then
+        echo_error "Not in a git repository"
+        return 1
+    fi
+
+    local git_root
+    git_root=$(git rev-parse --show-toplevel)
+    local project_name
+    project_name=$(basename "$git_root")
+    local project_root
+    project_root=$(dirname "$git_root")
+    local worktree_base="$project_root/.claude-worktree"
+
+    # Sanitize name for path (replace / with -)
+    local safe_name
+    safe_name=$(_cld_worktree_sanitize_name "$worktree_name")
+    local worktree_path="$worktree_base/${project_name}-${safe_name}"
+
+    mkdir -p "$worktree_base"
+
+    if [[ ! -d "$worktree_path" ]]; then
+        echo_info "Creating worktree: $worktree_path"
+        echo_info "Branch name: $worktree_name"
+
+        local error_msg
+        # Use original name for branch, sanitized name for path
+        if error_msg=$(git worktree add "$worktree_path" -b "$worktree_name" "$base_branch" 2>&1); then
+            echo_success "Created worktree: $worktree_path"
+        elif error_msg=$(git worktree add "$worktree_path" "$worktree_name" 2>&1); then
+            echo_success "Using existing branch: $worktree_path"
+        else
+            echo_error "Failed to create worktree"
+            echo_error "Git error: $error_msg"
+            return 1
+        fi
+    else
+        echo_info "Worktree exists: $worktree_path"
+    fi
+
+    # Create symlink in project root (use sanitized name)
+    _cld_worktree_create_symlink "$git_root" "$worktree_path" "$safe_name"
+
+    # Symlink .venv if exists in original (for Python projects)
+    if [[ -d "$git_root/.venv" ]] && [[ ! -e "$worktree_path/.venv" ]]; then
+        ln -s "$git_root/.venv" "$worktree_path/.venv"
+        echo_info "Symlinked .venv from original"
+    fi
+
+    cd "$worktree_path" || return 1
+    shift 2 2>/dev/null || shift 1
+    _cld_start_session "$@"
+}
+
+# Aliases
+alias cldw="_cld_worktree_session"
+alias cldw-ls="_cld_worktree_list"
+alias cldw-rm="_cld_worktree_remove"
+alias cldw-cleanup="_cld_worktree_cleanup"
+
+# EOF

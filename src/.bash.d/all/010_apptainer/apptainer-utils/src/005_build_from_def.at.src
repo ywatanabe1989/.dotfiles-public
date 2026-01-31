@@ -1,0 +1,75 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2025-03-08 12:22:41 (ywatanabe)"
+# File: /home/ywatanabe/.dotfiles/.bash.d/all/010_apptainer/apptainer-utils/src/005_build_from_def.at.src
+
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+
+apptainer_build_def2sif() {
+    if [[ "$1" == "-h" || "$1" == "--help" || -z "$1" ]]; then
+        echo "Builds SIF from definition file"
+        echo "Example: apptainer_build_def2sif /path/to/image.def"
+        echo "Example: abuild_def2sif /path/to/image.def"
+        echo "Usage: /path/to/image.def -> /path/to/image.sif"
+        return 0
+    fi
+
+    local SRC_DEF_PATH="$1"
+    local TGT_SIF_PATH="${SRC_DEF_PATH%.def}.sif"
+    local LOG_PATH="${TGT_SIF_PATH}-def2sif.log"
+    shift 1
+    local OPTIONS="--fakeroot  $@"
+
+    if [ ! -f "$SRC_DEF_PATH" ]; then
+        echo "Error: Definition file $SRC_DEF_PATH not found"
+        return 1
+    fi
+
+    if [ ! "${SRC_DEF_PATH##*.}" = "def" ]; then
+        echo "Error: Input file must be a .def file"
+        return 1
+    fi
+
+    echo_eval "apptainer build $OPTIONS \
+    $TGT_SIF_PATH \
+    $SRC_DEF_PATH \
+    2>&1 | tee $LOG_PATH"
+}
+
+apptainer_build_def2sand() {
+    if [[ "$1" == "-h" || "$1" == "--help" || -z "$1" ]]; then
+        echo "Builds sandbox from definition file"
+        echo "Example: apptainer_build_def2sand /path/to/image.def"
+        echo "Example: abuild_def2sand /path/to/image.def"
+        echo "Usage: /path/to/image.def -> /path/to/image.sandbox"
+        return 0
+    fi
+
+    local SRC_DEF_PATH="$1"
+    local TGT_SAND_PATH="${SRC_DEF_PATH%.def}.sandbox"
+    local LOG_PATH="${TGT_SAND_PATH}-def2sand.log"
+    shift 1
+    local OPTIONS="--sandbox --fakeroot $@"
+
+    if [ ! -f "$SRC_DEF_PATH" ]; then
+        echo "Error: Definition file $SRC_DEF_PATH not found"
+        return 1
+    fi
+
+    if [ ! "${SRC_DEF_PATH##*.}" = "def" ]; then
+        echo "Error: Input file must be a .def file"
+        return 1
+    fi
+
+    echo_eval "apptainer build $OPTIONS \
+    $TGT_SAND_PATH \
+    $SRC_DEF_PATH \
+    2>&1 | tee $LOG_PATH"
+}
+
+# Aliases
+alias abuild_def2sif=apptainer_build_def2sif
+alias abuild_def2sand=apptainer_build_def2sand
+
+# EOF

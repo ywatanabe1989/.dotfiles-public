@@ -1,0 +1,77 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2025-06-28 21:04:20 (ywatanabe)"
+# File: /ssh:sp:/home/ywatanabe/.bash.d/all/010_slurm/sprio.src
+
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# ---------------------------------------
+
+check_queue_position() {
+    local partition="$1"
+    local user="$2"
+
+    local fmt="%-8s %-16s %-10s %-4s %-5s %-20s %-15s %-3s %-7s %-11s %-11s %-10s\n"
+    local _SLURM_FORMAT="%i|%j|%t|%D|%R|%b|%C|%m|%l|%L|%P"
+
+    echo "Queue Position Analysis for $user in $partition:"
+    echo "----------------------------------------"
+    printf "$fmt" "WAITING" "JOBID" "NAME" "ST" "NODES" "NODELIST(REASON)" "TRES_PER_NODE" "CPU" "MIN_MEM" "TIME_LIMIT" "TIME_LEFT" "PRIORITY"
+    echo "--------------------------------------------------------------------------------------------------"
+
+    # Get available GPU nodes
+    local available_gpus=$(sinfo -p "$partition" -h -o "%A" | awk -F'/' '{print $2}')
+    echo "Available GPU nodes: $available_gpus"
+
+    # Get running jobs using GPUs
+    local running_jobs=$(squeue -p "$partition" -t R -h | wc -l)
+    echo "Currently running jobs: $running_jobs"
+    # local partition="$1"
+    # local user="$2"
+
+    # local fmt="%-8s %-16s %-10s %-4s %-5s %-20s %-15s %-3s %-7s %-11s %-11s\n"
+    # local _SLURM_FORMAT="%i|%j|%t|%D|%R|%b|%C|%m|%l|%L"
+
+    # echo "Queue Position Analysis for $user in $partition:"
+    # echo "----------------------------------------"
+    # printf "$fmt" "WAITING" "JOBID" "NAME" "ST" "NODES" "NODELIST(REASON)" "TRES_PER_NODE" "CPU" "MIN_MEM" "TIME_LIMIT" "TIME_LEFT"
+    # echo "--------------------------------------------------------------------------------------------------"
+
+    local position=0
+    local user_positions=""
+    while IFS='|' read -r jobid name state nodes nodelist tres cpu mem tlimit tleft; do
+        ((position++))
+        if [[ $jobid =~ ^[0-9] ]]; then
+            local owner=$(squeue -j "$jobid" -h -o "%u")
+            if [[ "$owner" == "$user" ]]; then
+                printf "$fmt" "#$position" "$jobid" "$name" "$state" "$nodes" "$nodelist" "$tres" "$cpu" "$mem" "$tlimit" "$tleft"
+                user_positions+="$position "
+            fi
+        fi
+    done < <(squeue -p "$partition" -t PD -r -o "$_SLURM_FORMAT" | sort -t'|' -k5,5 -k1,1n)
+
+    [[ -n "$user_positions" ]] && echo "Queue positions: $user_positions"
+    echo "----------------------------------------"
+}
+
+sprio_check() {
+    local user="${1:-$(whoami)}"
+    local partitions=$(squeue -u "$user" -h -t PD -r -o "%P" | sort -u)
+
+    LOG_PATH="./.sprio_checked.txt"
+    touch $LOG_PATH
+
+    date | tee -a $LOG_PATH
+
+    if [ -z "$partitions" ]; then
+        echo "No pending jobs found for user $user" | tee -a $LOG_PATH
+        return
+    fi
+
+    while IFS= read -r partition; do
+        [ -n "$partition" ] && check_queue_position "$partition" "$user" | tee -a $LOG_PATH
+    done <<< "$partitions"
+
+    echo -e "\n\n" >> $LOG_PATH
+}
+
+# EOF

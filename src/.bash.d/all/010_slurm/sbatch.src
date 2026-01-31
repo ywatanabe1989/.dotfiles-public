@@ -1,0 +1,14 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2025-04-05 17:04:07 (ywatanabe)"
+# File: /ssh:sp:/home/ywatanabe/.bash.d/all/010_slurm/sbatch.src
+
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+
+sbatch() {
+    mkdir -p ./slurm_logs
+    command sbatch --output=./slurm_logs/%j.out --error=./slurm_logs/%j.err "$@"
+}
+
+# EOF

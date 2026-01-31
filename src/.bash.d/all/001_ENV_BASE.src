@@ -1,0 +1,17 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2025-05-12 12:48:10 (ywatanabe)"
+# File: /home/ywatanabe/.bash.d/all/001_ENV_BASE.src
+
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# ---------------------------------------
+
+export SHELL=/bin/bash
+export OUTDATED_IGNORE=1
+export LC_ALL=en_US.UTF-8
+export TERM=xterm-256color
+export RSYNC_RSH=ssh
+
+export PAPER_DIRECTORY="~/proj/neurovista/paper"
+
+# EOF

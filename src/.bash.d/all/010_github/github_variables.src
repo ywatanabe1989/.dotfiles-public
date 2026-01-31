@@ -1,0 +1,26 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2025-04-17 05:46:44 (ywatanabe)"
+# File: /home/ywatanabe/.dotfiles/.bash.d/all/010_github/github_variables.src
+
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+
+if_user ywatanabe export GITHUB_USERNAME="ywatanabe1989"
+if_user ywatanabe export GITHUB_URL=git@github.com:ywatanabe1989
+if_user ywatanabe export GITHUB_BROWSER_CMD="powershell.exe Start-Process"
+if_user ywatanabe alias github="github"
+if_user ywatanabe alias 'gh_'="github"
+
+if_user yusukew export GITHUB_USERNAME="ywatanabe1989"
+if_user yusukew export GITHUB_URL=git@github.com:ywatanabe1989
+if_user yusukew export GITHUB_BROWSER_CMD="powershell.exe Start-Process"
+if_user yusukew alias github="github"
+if_user yusukew alias 'gh_'="github"
+
+# # if_user ywatanabe alias github="powershell.exe Start-Process https://github.com/ywatanabe1989?tab=repositories &"
+# # if_user ywatanabe alias 'gh_'="powershell.exe Start-Process https://github.com/ywatanabe1989?tab=repositories &"
+# if_user ywatanabe export GITHUB_URL=git@github.com:ywatanabe1989
+# if_user yusukew export GITHUB_URL=git@github.com:ywatanabe1989
+
+# EOF

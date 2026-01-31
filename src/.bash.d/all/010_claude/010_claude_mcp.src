@@ -1,0 +1,10 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2025-08-23 14:54:52 (ywatanabe)"
+# File: /home/ywatanabe/.bash.d/all/010_claude/010_claude_mcp.src
+
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# ---------------------------------------
+# claude mcp add filesystem -- npx -y @anthropic-ai/claude-filesystem-mcp
+
+# EOF

@@ -1,0 +1,11 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2026-01-13 10:28:17 (ywatanabe)"
+# File: /home/ywatanabe/.bash.d/all/010_git/git_monitor.src
+
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# ---------------------------------------
+
+alias m="$HOME/.bin/git//monitor_repository.sh"
+
+# EOF

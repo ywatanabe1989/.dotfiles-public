@@ -1,0 +1,54 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2025-03-06 12:46:19 (ywatanabe)"
+# File: /home/ywatanabe/.dotfiles/.bash.d/all/030_git/git_download_dir.src
+
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+git_download_dir() {
+    # Example
+    # $ git_download_dir https://github.com/ywatanabe1989/singularity_template/tree/main/factory/modules
+
+    ORIG_DIR=$PWD
+
+    if [ $# -ne 1 ]; then
+        echo "Usage: git_download_dir <repository-url-with-path>"
+        return 1
+    fi
+
+    full_url=$1
+
+    # Extract repository URL and directory path
+    repo_url=$(echo $full_url | cut -d'/' -f1-5)
+    dir_path=$(echo $full_url | cut -d'/' -f6- | sed 's/tree\/[^\/]*\///')
+
+    temp_dir=$(mktemp -d)
+    cd "$temp_dir"
+
+    git init
+    git remote add origin "$repo_url"
+    git config core.sparseCheckout true
+    echo "$dir_path/*" > .git/info/sparse-checkout
+
+    # Determine the branch name from the URL
+    branch=$(echo $full_url | sed -n 's/.*tree\/\([^\/]*\)\/.*/\1/p')
+    if [ -z "$branch" ]; then
+        branch="main"
+    fi
+
+    git pull origin "$branch"
+
+    if [ -d "$dir_path" ]; then
+        mv "$dir_path" "$ORIG_DIR/"
+        cd "$ORIG_DIR"
+        rm -rf "$temp_dir"
+        echo "Directory '$dir_path' has been downloaded successfully to $ORIG_DIR."
+    else
+        cd "$ORIG_DIR"
+        rm -rf "$temp_dir"
+        echo "Directory '$dir_path' not found in the repository."
+        return 1
+    fi
+}
+
+# EOF

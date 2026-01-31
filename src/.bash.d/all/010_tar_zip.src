@@ -1,0 +1,65 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2025-05-12 12:48:24 (ywatanabe)"
+# File: /home/ywatanabe/.bash.d/all/010_tar_zip.src
+
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# ---------------------------------------
+
+# Creates an archive (*.tar.gz) from given directory.
+# mktar() {
+#     local hostname=$(hostname)
+#     local date=$(date +%Y%m%d)
+#     tar cvzf "${1%%/}_${hostname}_${date}.tar.gz" "${1%%/}/"
+# }
+
+
+
+
+mktar () {
+    local hostname=$(hostname)
+    local date=$(date +%Y%m%d)
+    # local cores=$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4)
+    local cores=4
+
+    # Check if pigz is available
+    if command -v pigz >/dev/null 2>&1; then
+        # Use pigz for parallel compression
+        if command -v pv >/dev/null 2>&1; then
+            tar cf - "${1%%/}/" | pv -s $(du -sb "${1%%/}" 2>/dev/null | awk '{print $1}') | pigz -p $cores > "${1%%/}_${hostname}_${date}.tar.gz"
+        else
+            tar cf - "${1%%/}/" | pigz -p $cores > "${1%%/}_${hostname}_${date}.tar.gz"
+        fi
+    else
+        # Fallback to original tar command with gzip
+        echo "Note: pigz not found. Using standard tar with gzip for compression. Continue? [Y/n]"
+        read answer
+        if [[ "$answer" == "n" || "$answer" == "N" ]]; then
+            echo "Operation cancelled"
+            return 1
+        elif [[ "$answer" == "y" || "$answer" == "Y" || -z "$answer" ]]; then
+            if command -v pv >/dev/null 2>&1; then
+                tar cf - "${1%%/}/" | pv -s $(du -sb "${1%%/}" 2>/dev/null | awk '{print $1}') | gzip > "${1%%/}_${hostname}_${date}.tar.gz"
+            else
+                tar cf "${1%%/}_${hostname}_${date}.tar.gz" "${1%%/}/"
+            fi
+        else
+            echo "Invalid input, operation aborted"
+            return 1
+        fi
+    fi
+}
+
+lstar() {
+    local tmpdir=$(mktemp -d)
+    tar -xzf "$1" -C "$tmpdir"
+    # git-tree "$tmpdir"
+    tree "$tmpdir"
+    rm -rf "$tmpdir"
+}
+
+
+# Create a ZIP archive of a file or folder.
+mkzip() { zip -r "${1%%/}.zip" "$1" ; }
+
+# EOF

@@ -1,0 +1,13 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2025-05-10 01:55:48 (ywatanabe)"
+# File: /home/ywatanabe/.dotfiles/.bash.d/all/010_git/git_tree.src
+
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+
+git_tree() {
+    tree --gitignore
+}
+
+# EOF

@@ -1,0 +1,89 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2025-12-18 (ywatanabe)"
+# File: /home/ywatanabe/.dotfiles/.bash.d/all/010_claude/010_claude_symlinks.src
+# Description: Merge central Claude config with project-specific settings
+#
+# Strategy:
+#   - Central files OVERRIDE project files (easy central updates)
+#   - Project-specific files (not in central) are PRESERVED
+#   - Files from central are marked READ-ONLY to prevent accidental edits
+
+# Merge central config into project directory
+# - Central files OVERRIDE project files (for easy central updates)
+# - Project-specific files (not in central) are preserved
+# - Files from central are marked read-only (444)
+# Usage: _cld_merge_config_dir <central_src> <project_tgt>
+_cld_merge_config_dir() {
+    local central_src=$1
+    local project_tgt=$2
+
+    [[ ! -d "$central_src" ]] && return 0
+
+    mkdir -p "$project_tgt"
+    _cld_manage_permissions "$project_tgt" unprotect
+
+    # Get list of files that exist in central (for marking read-only later)
+    local central_files=()
+    while IFS= read -r -d '' file; do
+        central_files+=("${file#"$central_src"/}")
+    done < <(find "$central_src" -type f -print0 2>/dev/null)
+
+    # Copy all files from central, OVERWRITING existing ones
+    # Project-specific files (not in central) are preserved
+    # Exclude docs/ and .claude/ to prevent circular references
+    # For project-switch: only sync *example* files, exclude all others
+    rsync -a --exclude='docs' --exclude='.claude' \
+        --include='project-switch/' \
+        --include='project-switch/*example*' \
+        --exclude='project-switch/*' \
+        "$central_src/" "$project_tgt/"
+
+    # Mark files from central as read-only to prevent accidental edits
+    # Shell scripts need execute permission (544), others get 444
+    for rel_file in "${central_files[@]}"; do
+        local tgt_file="$project_tgt/$rel_file"
+        if [[ -f "$tgt_file" ]]; then
+            if [[ "$tgt_file" == *.sh ]]; then
+                chmod 544 "$tgt_file"
+            else
+                chmod 444 "$tgt_file"
+            fi
+        fi
+    done
+
+    echo_info "Merged: $(basename "$central_src") (central overrides, readonly)"
+}
+
+_cld_sync_skills_dir() {
+    local project_root=$1
+    local central_src="$HOME/.claude/to_claude/skills"
+    local project_tgt="$project_root/.claude/skills"
+
+    echo_info "Syncing skills (central overrides project)"
+    _cld_merge_config_dir "$central_src" "$project_tgt"
+}
+
+_cld_sync_commands_dir() {
+    local project_root=$1
+    local central_src="$HOME/.claude/to_claude/commands"
+    local project_tgt="$project_root/.claude/commands"
+
+    echo_info "Syncing commands (central overrides project)"
+    _cld_merge_config_dir "$central_src" "$project_tgt"
+}
+
+_cld_sync_hooks_dir() {
+    local project_root=$1
+    local central_src="$HOME/.claude/to_claude/hooks"
+    local project_tgt="$project_root/.claude/hooks"
+
+    echo_info "Syncing hooks (central overrides project)"
+    _cld_merge_config_dir "$central_src" "$project_tgt"
+}
+
+# Backward compatibility aliases
+_cld_symlink_to_skills_dir() { _cld_sync_skills_dir "$@"; }
+_cld_symlink_to_commands_dir() { _cld_sync_commands_dir "$@"; }
+
+# EOF

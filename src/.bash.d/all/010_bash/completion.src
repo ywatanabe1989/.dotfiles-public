@@ -1,0 +1,65 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2025-09-10 18:13:40 (ywatanabe)"
+# File: /home/ywatanabe/.dotfiles/.bash.d/all/010_bash/completion.src
+
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# ---------------------------------------
+
+if [ -f /usr/share/bash-completion/bash_completion ]; then
+    . /usr/share/bash-completion/bash_completion
+fi
+
+# bind 'set completion-ignore-case on'
+# bind 'set enable-bracketed-paste off'# 2>/dev/null
+# Only execute bind commands if shell is interactive
+if [[ $- == *i* ]]; then
+    bind 'set completion-ignore-case on'
+    bind 'set enable-bracketed-paste off'
+fi
+
+if [ -f ~/.dotfiles/src/.bash_completion.d/decrypt ]; then
+    source ~/.dotfiles/src/.bash_completion.d/decrypt
+fi
+
+# Python CLI tab completions
+# Strategy: Source cached files (fast), regenerate in background
+_COMPLETION_CACHE_DIR="$HOME/.bash_completion.d"
+mkdir -p "$_COMPLETION_CACHE_DIR"
+
+# Source cached completion if exists, otherwise skip (will be ready next session)
+_source_completion() {
+    local cache_file="$_COMPLETION_CACHE_DIR/$1.bash"
+    [[ -f "$cache_file" ]] && source "$cache_file"
+}
+
+# Regenerate all completions in background (non-blocking)
+_regenerate_completions() {
+    (
+        # Click-based CLIs
+        command -v scitex &>/dev/null &&
+            _SCITEX_COMPLETE=bash_source scitex >"$_COMPLETION_CACHE_DIR/scitex.bash" 2>/dev/null
+        command -v figrecipe &>/dev/null &&
+            _FIGRECIPE_COMPLETE=bash_source figrecipe >"$_COMPLETION_CACHE_DIR/figrecipe.bash" 2>/dev/null
+        command -v crossref-local &>/dev/null &&
+            _CROSSREF_LOCAL_COMPLETE=bash_source crossref-local >"$_COMPLETION_CACHE_DIR/crossref-local.bash" 2>/dev/null
+
+        # argcomplete-based CLIs
+        if command -v register-python-argcomplete &>/dev/null; then
+            command -v socialia &>/dev/null &&
+                register-python-argcomplete socialia >"$_COMPLETION_CACHE_DIR/socialia.bash" 2>/dev/null
+        fi
+    ) &
+    disown
+}
+
+# Source existing cached completions (instant)
+_source_completion scitex
+_source_completion figrecipe
+_source_completion crossref-local
+_source_completion socialia
+
+# Regenerate in background for next session
+_regenerate_completions
+
+# EOF

@@ -1,0 +1,5 @@
+#!/bin/bash
+
+cd /home/ywatanabe/proj/ripple-wm/paper/ && ./compile -s -m -r -- -f -p2t
+
+# EOF

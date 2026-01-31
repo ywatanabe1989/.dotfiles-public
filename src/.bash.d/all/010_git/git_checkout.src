@@ -1,0 +1,12 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2025-05-19 20:59:21 (ywatanabe)"
+# File: /ssh:sp:/home/ywatanabe/.bash.d/all/010_git/git_checkout.src
+
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# ---------------------------------------
+
+alias checkout="git checkout"
+alias co="git checkout"
+
+# EOF

@@ -1,0 +1,80 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2025-03-08 14:04:00 (ywatanabe)"
+# File: /home/ywatanabe/.dotfiles/.bash.d/all/010_git/git_reset.src
+
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+source ~/.bash.d/all/010_bash/colors.src
+
+usage() {
+    echo -e "${BLUE}Usage: git_reset [-h|--help] [-d|--dry-run] [-s|--simple] <number_of_commits>${NC}"
+    echo
+    echo "Resets git HEAD by specified number of commits"
+    echo
+    echo -e "${GREEN}Options:${NC}"
+    echo "  -h, --help     Display this help message"
+    echo "  -d, --dry-run  Show what would be done without executing"
+    echo "  -s, --simple   Show only commit hashes and messages"
+    echo
+    echo -e "${GREEN}Example:${NC}"
+    echo "  git_reset 2        # Reset HEAD by 2 commits"
+    echo "  git_reset -d 2     # Show commits to be reset"
+    echo "  git_reset -ds 2    # Show only commit messages"
+}
+
+git_reset() {
+    local dry_run=0
+    local simple=0
+
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            -h|--help) usage ;;
+            -d|--dry-run) dry_run=1 ;;
+            -s|--simple) simple=1 ;;
+            -[ds]*)
+                for ((i=1; i<${#1}; i++)); do
+                    case "${1:i:1}" in
+                        d) dry_run=1 ;;
+                        s) simple=1 ;;
+                        *) echo -e "${RED}Error: Unknown option ${1:i:1}${NC}"; usage ;;
+                    esac
+                done
+                ;;
+            -*) echo -e "${RED}Error: Unknown option $1${NC}"; usage ;;
+            *) n_back=${1:-1} ;;
+        esac
+        shift
+    done
+
+    if [[ -z "$n_back" ]]; then
+        echo -e "${RED}Error: Number of commits to reset must be specified${NC}"
+        usage
+    fi
+
+    if ! [[ "$n_back" =~ ^[0-9]+$ ]]; then
+        printf "${RED}Error: Input must be a positive integer${NC}"
+        usage
+    fi
+
+    if [[ $dry_run -eq 1 ]]; then
+        printf "${YELLOW}Would reset HEAD by $n_back commits${NC}"
+        if [[ $simple -eq 1 ]]; then
+            git log -n $((n_back + 1)) --oneline | less
+        else
+            {
+                printf "\n${BLUE}File changes to be reset:${NC}"
+                local commit_idx
+                for commit_idx in $(seq 0 $((n_back - 1))); do
+                    printf "\n${GREEN}Commit $(git rev-parse --short HEAD~$commit_idx):${NC}"
+                    git show HEAD~$commit_idx
+                done
+            } | less -R
+        fi
+    else
+        git reset HEAD~$n_back
+    fi
+}
+alias gr="git_reset"
+
+# EOF

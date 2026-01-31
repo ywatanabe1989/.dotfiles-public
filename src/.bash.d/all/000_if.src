@@ -1,0 +1,68 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2025-08-27 20:16:45 (ywatanabe)"
+# File: /home/ywatanabe/.dotfiles/.bash.d/all/000_if.src
+
+# shellcheck disable=SC2034
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# ---------------------------------------
+
+# if_user () {
+#     # Example usage
+#     # if_user ywatanabe echo "This is ywatanabe's account"
+
+#     USER_KEY_WORD=$1
+#     shift
+#     COMMAND='"$@"'
+
+#     if [[ $USER == *"$USER_KEY_WORD"* ]]; then
+#         eval "$COMMAND"
+#     fi
+# }
+if_user() {
+    USER_KEY_WORD=$1
+    shift
+    if [[ $USER == *"$USER_KEY_WORD"* ]]; then
+        "$@"
+    fi
+}
+
+if_host() {
+    # Example usage
+    # if_host ywata echo "This is ywata machine"
+    HOST_KEY_WORD=$1
+    shift
+
+    # Use "$@" directly instead of storing in a variable with quotes
+    if [[ $(hostname) == *"$HOST_KEY_WORD"* ]]; then
+        "$@"
+    fi
+}
+
+# if_os () {
+#     # Example usage
+#     # if_os ubuntu echo "This is Ubuntu"
+#     # if_os centos echo "This is CentOS"
+
+#     OS_KEY_WORD=$1
+#     shift
+#     COMMAND='"$@"'
+
+#     # Read the ID line directly from /etc/os-release to determine the OS type
+#     OS_TYPE=$(grep '^ID=' /etc/os-release | cut -d'=' -f2 | tr -d '"')
+
+#     # Check if the OS type matches the keyword, execute command if it does
+#     if [[ $OS_TYPE == *"$OS_KEY_WORD"* ]]; then
+#         eval "$COMMAND"
+#     fi
+# }
+if_os() {
+    OS_KEY_WORD=$1
+    shift
+    OS_TYPE=$(grep '^ID=' /etc/os-release | cut -d'=' -f2 | tr -d '"')
+    if [[ $OS_TYPE == *"$OS_KEY_WORD"* ]]; then
+        "$@"
+    fi
+}
+
+# EOF

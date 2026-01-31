@@ -1,0 +1,14 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2025-05-12 12:48:25 (ywatanabe)"
+# File: /home/ywatanabe/.bash.d/all/010_tree.src
+
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# ---------------------------------------
+
+tree_simple () {
+    local tgt_dir="$1"
+    tree "$tgt_dir" -L 5 -P "*" --noreport | sed 's/ -> .*$//'
+}
+
+# EOF

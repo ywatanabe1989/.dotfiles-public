@@ -1,0 +1,49 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2025-03-06 12:47:47 (ywatanabe)"
+# File: /home/ywatanabe/.dotfiles/.bash.d/all/030_git/git_track.src
+
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+git_track() {
+    # Check if any arguments were provided
+    if [ $# -eq 0 ]; then
+        echo "Usage: git_track <file1> <directory1> ..."
+        echo "Error: No file or directory specified to track."
+        return 1
+    fi
+
+    # Show which files will be tracked
+    echo "The following files/directories will be tracked:"
+    for path in "$@"; do
+        if [ -e "$path" ]; then
+            echo "$path"
+        else
+            echo "$path (not found)"
+        fi
+    done
+
+    # Ask for confirmation
+    read -p "Do you want to proceed? (y/n) " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        echo "Operation cancelled."
+        return 1
+    fi
+
+    # Track the files or directories specified in the arguments
+    git add "$@"
+    echo "Files and directories have been staged for tracking."
+
+    # Remove these paths from .gitignore if they exist
+    for path in "$@"; do
+        sed -i "\#^$path#d" .gitignore
+    done
+    echo "Tracked paths have been removed from .gitignore (if they existed)."
+
+    git add .gitignore
+    git commit -m "Updated .gitignore and tracked new paths"
+}
+alias track="git_track"
+
+# EOF

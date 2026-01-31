@@ -1,0 +1,100 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2025-05-12 12:48:24 (ywatanabe)"
+# File: /home/ywatanabe/.bash.d/all/010_tmux.src
+
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# ---------------------------------------
+
+# Set TMUX_TMPDIR based on hostname and ensure proper permissions
+# if [[ $(hostname) =~ [Ss]partan ]]; then
+#     export TMUX_TMPDIR="/tmp/$USER-tmux-$$"
+#     rm -rf /tmp/ywatanabe-tmux-*
+#     if [ ! -d "$TMUX_TMPDIR" ]; then
+#         mkdir -p "$TMUX_TMPDIR" >/dev/null
+#         chmod 700 "$TMUX_TMPDIR" >/dev/null
+#     fi
+# else
+#     cleanup_tmux_dirs() {
+#         find "$HOME/.tmux" -mindepth 1 -maxdepth 1 -type d -name "tmux-*" ! -name "tmux-$(id -u)" -exec rm -rf {} \; 2>/dev/null || true
+#     }
+#     cleanup_tmux_dirs
+#     export TMUX_TMPDIR="$HOME/.tmux"
+#     if [ ! -d "$TMUX_TMPDIR" ]; then
+#         mkdir -p "$TMUX_TMPDIR/tmux-$(id -u)" >/dev/null
+#     fi
+# fi
+
+# Basic tmux aliases
+alias tb='tmux new-session -d -s 2>/dev/null || true'
+alias tc='tmux 2>/dev/null || true'
+alias td='tmux detach 2>/dev/null || true'
+alias ts='tmux new-session -s 2>/dev/null || true'
+
+# List tmux sessions
+tl() {
+    if ! command -v tmux >/dev/null 2>&1; then
+        return 0
+    fi
+    tmux list-sessions &>/dev/null || return 0
+    if [ "$#" -eq 0 ]; then
+        tmux list-sessions 2>/dev/null || return 0
+    else
+        result="$(tmux list-sessions 2>/dev/null)"
+        [ -z "$result" ] && return 0
+        for pattern in "$@"; do
+            result=$(echo "$result" | grep -i "$pattern")
+        done
+        [ -n "$result" ] && echo "$result"
+    fi
+}
+
+# Reattach to tmux session
+tmux_reattach() {
+    tmux list-sessions &>/dev/null || return 0
+    local keyword="$1"
+    local matching_sessions=$(tmux list-sessions -F "#{session_name}" 2>/dev/null | grep -i "$keyword")
+    local session_count=$(echo "$matching_sessions" | grep -c '^' 2>/dev/null)
+
+    if [ "$session_count" -eq 0 ]; then
+        return 0
+    elif [ "$session_count" -eq 1 ]; then
+        tmux attach -t "$matching_sessions" 2>/dev/null || true
+    else
+        echo "$matching_sessions"
+    fi
+}
+
+alias tr=tmux_reattach
+alias twipe='tmux kill-session -a 2>/dev/null && tmux list-sessions 2>/dev/null || true'
+
+# Kill tmux sessions
+tmux_kill() {
+    tmux list-sessions &>/dev/null || return 0
+    local sessions=$(tmux list-sessions -F '#{session_name}' 2>/dev/null | grep "$1")
+    if [ -n "$sessions" ]; then
+        echo "$sessions"
+        read -p "Kill these sessions? (y/n) " choice
+        case "$choice" in
+            y|Y ) echo "$sessions" | xargs -I {} tmux kill-session -t {} 2>/dev/null ;;
+            * ) return 0 ;;
+        esac
+    fi
+    tmux list-sessions 2>/dev/null || true
+}
+
+alias tk="tmux_kill"
+alias tmux_quit=tmux_kill
+alias tq=tmux_quit
+
+# Move process to tmux session
+tmux_glob_session() {
+    local PID="$1"
+    [ -z "$PID" ] && return 0
+    local SESSION_NAME="proc_$PID"
+    tmux new-session -d -s "$SESSION_NAME" 2>/dev/null || true
+    tmux send-keys -t "$SESSION_NAME" "reptyr -T $PID" C-m 2>/dev/null || true
+    echo $PID was moved to the tmux session "$SESSION_NAME"
+}
+
+# EOF

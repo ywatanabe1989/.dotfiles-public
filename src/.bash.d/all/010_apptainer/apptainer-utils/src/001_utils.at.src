@@ -1,0 +1,20 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2025-03-08 12:22:45 (ywatanabe)"
+# File: /home/ywatanabe/.dotfiles/.bash.d/all/010_apptainer/apptainer-utils/src/001_utils.at.src
+
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+
+# Utility functions
+echo_eval() {
+    [[ "$1" == "-h" ]] && echo "Usage: ee/echo_eval COMMAND - Echo and execute command" && return
+    echo "----------------------------------------"
+    echo -e "$(echo "$@" | sed 's/ *\\ */\n/g')"
+    echo "----------------------------------------"
+    eval "$@"
+}
+
+alias ee=echo_eval
+
+# EOF

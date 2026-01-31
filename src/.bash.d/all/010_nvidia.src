@@ -1,0 +1,18 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2025-06-05 15:43:40 (ywatanabe)"
+# File: /ssh:ywatanabe@sp:/home/ywatanabe/.bash.d/all/010_nvidia.src
+
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# ---------------------------------------
+
+alias ns='watch -d -n 0.5 nvidia-smi'
+
+function cudav () {
+    export CUDA_VISIBLE_DEVICES=$@
+    export APPTAINERENV_CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES
+}
+export CUDA_VISIBLE_DEVICES=0,1,2,3
+export CUDA_LAUNCH_BLOCKING=1
+
+# EOF

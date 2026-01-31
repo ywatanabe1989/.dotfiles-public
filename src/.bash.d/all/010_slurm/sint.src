@@ -1,0 +1,290 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2025-09-07 04:25:07 (ywatanabe)"
+# File: /ssh:sp:/home/ywatanabe/.bash.d/all/010_slurm/sint.src
+
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# ---------------------------------------
+
+# ALL_CPU_NODES="argali,bigmem,cascade,long,sapphire,fos,mig,turbsim"
+ALL_CPU_NODES="sapphire"
+ALL_GPU_NODES="gpu-a100,gpu-a100-short,gpu-h100,gpu-a100-preempt,gpu-l40s-preempt,gpu-v100-preempt,deeplearn,extremecfd,fos-gpu-l40s,mig-gpu,gpgputest-v100,gpgputest"
+
+_sint_base() {
+    local partition=$1 n_gpus=$2 time=$3 memory=$4 n_cpus=$5
+    shift 5
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            -c|--cpus) n_cpus="$2"; shift 2;;
+            -g|--gpus) n_gpus="$2"; shift 2;;
+            -t|--time) time="$2"; shift 2;;
+            -m|--mem) memory="${2%G}"; shift 2;;
+            -p|--partition) partition="$2"; shift 2;;
+            *) echo "Unknown option: $1"; return 1;;
+        esac
+    done
+    if [ -z "$partition" ]; then
+        if [ "$n_gpus" -gt 0 ]; then
+            partition="$ALL_GPU_NODES"
+        else
+            partition="$ALL_CPU_NODES"
+        fi
+    fi
+    local command="sinteractive"
+    command+=" --partition=$partition"
+    [ "$n_gpus" -gt 0 ] && command+=" --gres=gpu:$n_gpus"
+    command+=" --time='$time'"
+    command+=" --mem='${memory}G'"
+    command+=" --cpus-per-task=$n_cpus"
+    [ -n "$DISPLAY" ] && command+=" --x11"
+    echo "--------------------------------------------------------------------------------"
+    echo "Executing: $command"
+    echo "--------------------------------------------------------------------------------"
+    eval "$command"
+}
+
+sint() {
+    usage() {
+        echo "Usage: sint [-o|-s|-l] [override_options]"
+        echo
+        echo "Modes:"
+        echo "  -o, --orig          Original mode with custom settings"
+        echo "  -sc, --short-cpu    Short CPU (4h, 256GB)"
+        echo "  -lc, --long-cpu     Long CPU (7d, 256GB)"
+        echo "  -sg, --short-gpu    Short GPU (A100, 1 GPU, 4h, 64GB)"
+        echo "  -lg, --long-gpu     Long GPU (A100, 4 GPU, 7d, 400GB)"
+        echo
+        echo "Options:"
+        echo "  -p, --partition NAME  Specific partition(s)"
+        echo "  -c, --cpus NUM        Number of CPUs"
+        echo "  -g, --gpus NUM        Number of GPUs"
+        echo "  -t, --time TIME       Time limit (HH:MM:SS)"
+        echo "  -m, --mem SIZE        Memory size (in GB)"
+        echo "  -h, --help            Show this help"
+        exit 1
+    }
+    case "$1" in
+        -sg|--short-gpu)
+            shift
+            local partition="gpu-a100,gpu-a100-short,gpu-a100-preempt,deeplearn,feit-gpu-a100"
+            local n_gpus=1
+            local n_cpus=1
+            local memory=64
+            local time="4:00:00"
+            _sint_base "$partition" "$n_gpus" "$time" "$memory" "$n_cpus" "$@"
+            ;;
+        -lg|--long-gpu)
+            shift
+            local partition="gpu-a100"
+            local n_gpus=4
+            local memory=32
+            local n_cpus=1
+            _sint_base "$partition" "$n_gpus" "7-00:00:00" "$memory" "$n_cpus" "$@"
+            ;;
+        -sc|--short-cpu)
+            shift
+            local partition="$ALL_CPU_NODES"
+            local n_gpus=0
+            local n_cpus=32
+            local memory=256
+            local time="4:00:00"
+            _sint_base "$partition" "$n_gpus" "$time" "$memory" "$n_cpus" "$@"
+            ;;
+        -lc|--long-cpu)
+            shift
+            local partition="$ALL_CPU_NODES"
+            local n_gpus=0
+            local memory=32
+            local n_cpus=256
+            _sint_base "$partition" "$n_gpus" "7-00:00:00" "$memory" "$n_cpus" "$@"
+            ;;
+        -h|--help)
+            usage
+            ;;
+        *)
+            local n_gpus=0 time="4:00:00" memory=512 partition="" n_cpus=1
+            while [[ $# -gt 0 ]]; do
+                case $1 in
+                    -g|--gpus) n_gpus="${2:-1}"; shift 2;;
+                    -t|--time) time="${2:-4:00:00}"; shift 2;;
+                    -m|--mem) memory="${2:-128}"; shift 2;;
+                    -p|--partition) partition="$2"; shift 2;;
+                    -c|--cpus) n_cpus="${2:-1}"; shift 2;;
+                    *) usage;;
+                esac
+            done
+            _sint_base "$partition" "$n_gpus" "$time" "$memory" "$n_cpus"
+            ;;
+    esac
+}
+
+# Create function-based shortcuts instead of aliases
+
+sintc() {
+    [[ "$1" == "-h" || "$1" == "--help" ]] && { sint -h; return; }
+    sint -sc "$@";
+}
+
+sintg() {
+    [[ "$1" == "-h" || "$1" == "--help" ]] && { sint -h; return; }
+    sint -sg "$@";
+}
+
+sintsg() {
+    [[ "$1" == "-h" || "$1" == "--help" ]] && { sint -h; return; }
+    sint -sg "$@";
+}
+
+sintsg2() {
+    [[ "$1" == "-h" || "$1" == "--help" ]] && { sint -h; return; }
+    sint -sg -g 2 "$@";
+}
+
+sintlg() {
+    [[ "$1" == "-h" || "$1" == "--help" ]] && { sint -h; return; }
+    sint -lg "$@";
+}
+
+sintsc() {
+    [[ "$1" == "-h" || "$1" == "--help" ]] && { sint -h; return; }
+    sint -sc "$@";
+}
+
+sintlc() {
+    [[ "$1" == "-h" || "$1" == "--help" ]] && { sint -h; return; }
+    sint -lc "$@";
+}
+
+# #!/bin/bash
+# # -*- coding: utf-8 -*-
+# # Timestamp: "2025-04-28 07:37:44 (ywatanabe)"
+# # File: /ssh:sp:/home/ywatanabe/.dotfiles/.bash.d/all/010_slurm/sint.src
+
+# THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+
+# ALL_CPU_NODES="argali,bigmem,cascade,long,sapphire,fos,mig,turbsim"
+# ALL_GPU_NODES="gpu-a100,gpu-a100-short,gpu-h100,gpu-a100-preempt,gpu-l40s-preempt,gpu-v100-preempt,deeplearn,extremecfd,fos-gpu-l40s,mig-gpu,gpgputest-v100,gpgputest"
+
+# _sint_base() {
+#     local partition=$1 n_gpus=$2 time=$3 memory=$4 n_cpus=5
+#     shift 5
+#     while [[ $# -gt 0 ]]; do
+#         case $1 in
+#             -c|--cpus) n_cpus="$2"; shift 2;;
+#             -g|--gpus) n_gpus="$2"; shift 2;;
+#             -t|--time) time="$2"; shift 2;;
+#             -m|--mem) memory="${2%G}"; shift 2;;
+#             -p|--partition) partition="$2"; shift 2;;
+#             *) echo "Unknown option: $1"; return 1;;
+#         esac
+#     done
+
+#     if [ -z "$partition" ]; then
+#         if [ "$n_gpus" -gt 0 ]; then
+#             partition="$ALL_GPU_NODES"
+#         else
+#             partition="$ALL_CPU_NODES"
+#         fi
+#     fi
+
+#     local command="sinteractive"
+#     command+=" --partition=$partition"
+#     [ "$n_gpus" -gt 0 ] && command+=" --gres=gpu:$n_gpus"
+#     command+=" --time='$time'"
+#     command+=" --mem='${memory}G'"
+#     command+=" --cpus-per-task=$n_cpus"
+#     command+=" --x11"
+
+#     echo "--------------------------------------------------------------------------------"
+#     echo "Executing: $command"
+#     echo "--------------------------------------------------------------------------------"
+#     eval "$command"
+# }
+
+# sint() {
+#     usage() {
+#         echo "Usage: sint [-o|-s|-l] [override_options]"
+#         echo
+#         echo "Modes:"
+#         echo "  -o, --orig          Original mode with custom settings"
+#         echo "  -sc, --short-cpu    Short CPU (4h, 256GB)"
+#         echo "  -lc, --long-cpu     Long CPU (7d, 256GB)"
+#         echo "  -sg, --short-gpu    Short GPU (A100, 1 GPU, 4h, 32GB)"
+#         echo "  -lg, --long-gpu     Long GPU (A100, 4 GPU, 7d, 400GB)"
+#         echo
+#         echo "Options:"
+#         echo "  -p, --partition NAME  Specific partition(s)"
+#         echo "  -c, --cpus NUM        Number of CPUs"
+#         echo "  -g, --gpus NUM        Number of GPUs"
+#         echo "  -t, --time TIME       Time limit (HH:MM:SS)"
+#         echo "  -m, --mem SIZE        Memory size (in GB)"
+#         echo "  -h, --help            Show this help"
+#         exit 1
+#     }
+
+#     case "$1" in
+#         -sg|--short-gpu)
+#             shift
+#             local partition="gpu-a100,gpu-a100-short,gpu-a100-preempt,deeplearn,feit-gpu-a100"
+#             local n_gpus=1
+#             local n_cpus=1
+#             local memory=32
+#             local time="4:00:00"
+#             _sint_base "$partition" "$n_gpus" "$time" "$memory" "$n_cpus" "$@"
+#             ;;
+#         -lg|--long-gpu)
+#             shift
+#             local partition="gpu-a100"
+#             local n_gpus=4
+#             local memory=256
+#             local n_cpus=1
+#             _sint_base "$partition" "$n_gpus" "7-00:00:00" "$memory" "$n_cpus" "$@"
+#             ;;
+#         -sc|--short-cpu)
+#             shift
+#             local partition="$ALL_CPU_NODES"
+#             local n_gpus=0
+#             local n_cpus=32
+#             local memory=256
+#             local time="4:00:00"
+#             _sint_base "$partition" "$n_gpus" "$time" "$memory" "$n_cpus" "$@"
+#             ;;
+#         -lc|--long-cpu)
+#             shift
+#             local partition="$ALL_CPU_NODES"
+#             local n_gpus=0
+#             local memory=256
+#             local n_cpus=32
+#             _sint_base "$partition" "$n_gpus" "7-00:00:00" "$memory" "$n_cpus" "$@"
+#             ;;
+#         -h|--help)
+#             usage
+#             ;;
+#         *)
+#             local n_gpus=0 time="4:00:00" memory=512 partition="" n_cpus=1
+#             while [[ $# -gt 0 ]]; do
+#                 case $1 in
+#                     -g|--gpus) n_gpus="${2:-1}"; shift 2;;
+#                     -t|--time) time="${2:-4:00:00}"; shift 2;;
+#                     -m|--mem) memory="${2:-128}"; shift 2;;
+#                     -p|--partition) partition="$2"; shift 2;;
+#                     -c|--cpus) n_cpus="${2:-1}"; shift 2;;
+#                     *) usage;;
+#                 esac
+#             done
+#             _sint_base "$partition" "$n_gpus" "$time" "$memory" "$n_cpus"
+#             ;;
+#     esac
+# }
+
+# alias sintc="sint -sc $@"
+# alias sintg="sint -sg $@"
+# alias sintsg="sint -sg $@"
+# alias sintlg="sint -lg $@"
+# alias sintsc="sint -sc $@"
+# alias sintlc="sint -lc $@"
+
+# # EOF
+
+# EOF

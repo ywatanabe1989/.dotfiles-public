@@ -1,0 +1,44 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2025-03-08 12:22:42 (ywatanabe)"
+# File: /home/ywatanabe/.dotfiles/.bash.d/all/010_apptainer/apptainer-utils/src/008_run_sandbox_local.at.src
+
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+
+function apptainer_run_sandbox_local() {
+    [[ "$1" == "-h" ]] && _apptainer_run_sandbox_local_help && return
+    echo_eval "apptainer run \
+    $APPTAINER_RUNTIME_OPTIONS \
+    $APPTAINER_SANDBOX_IMAGE_LOCAL_PATH \
+    $@"
+}
+
+function apptainer_run_sandbox_local_writable() {
+    [[ "$1" == "-h" ]] && _apptainer_run_sandbox_local_writable_help && return
+    echo_eval "unset APPTAINER_BIND; \
+    apptainer run \
+    --writable \
+    $APPTAINER_SANDBOX_IMAGE_LOCAL_PATH \
+    $@"
+}
+
+function _apptainer_run_sandbox_local_help() {
+    cat << 'EOF'
+Usage: arun_s [-h] [args...]
+Run local sandbox container
+EOF
+}
+
+function _apptainer_run_sandbox_local_writable_help() {
+    cat << 'EOF'
+Usage: arun_sw [-h] [args...]
+Run local sandbox container in writable mode
+EOF
+}
+
+# Aliases
+alias arun_s='apptainer_run_sandbox_local'
+alias arun_sw='apptainer_run_sandbox_local_writable'
+
+# EOF

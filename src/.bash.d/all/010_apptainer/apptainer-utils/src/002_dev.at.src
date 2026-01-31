@@ -1,0 +1,149 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2025-03-08 12:22:42 (ywatanabe)"
+# File: /home/ywatanabe/.dotfiles/.bash.d/all/010_apptainer/apptainer-utils/src/002_dev.at.src
+
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+
+################################################################################
+# Apptainer Development Environment
+#
+# This script provides a development environment for Apptainer containers with
+# interactive workflow management and version control.
+#
+# Usage:
+#    $ apptainer_dev project_name
+#
+# Interactive Options:
+#    1) Shell     - Enter development environment
+#    2) Update    - Sync definition file with changes
+#    3) Test      - Run basic validation tests
+#    4) Snapshot  - Save current sandbox state
+#    5) Compare   - View differences between states
+#    6) Validate  - Perform final validation
+#
+# Directory Structure:
+#    ./
+#    ├── image.sandbox/           # Development container
+#    ├── definitions/            # Container recipes
+#    └── builds/
+#        └── current/
+#            ├── snapshots/      # Version history
+#            ├── sessions/       # Shell logs
+#            ├── tests/          # Test results
+#            └── changes/        # Modification tracking
+#
+# Dependencies:
+#    - Apptainer/Singularity
+#    - rsync
+#    - diffutils
+################################################################################
+
+
+################################################################################
+# Core Apptainer Development Functions
+################################################################################
+_apptainer_check_sandbox() {
+    local sandbox="image.sandbox"
+    [[ ! -d "$sandbox" ]] && echo "Error: Sandbox not found" && return 1
+    return 0
+}
+
+_apptainer_dev_shell() {
+    _apptainer_check_sandbox || return 1
+    local sandbox="image.sandbox"
+    local session_log="builds/current/sessions/$(date +%Y%m%d_%H%M%S).log"
+    mkdir -p "$(dirname "$session_log")"
+    script -f "$session_log" apptainer shell "$sandbox"
+}
+
+_apptainer_snapshot() {
+    local sandbox="image.sandbox"
+    local snapshot_dir="builds/current/snapshots/$(date +%Y%m%d_%H%M%S)"
+    mkdir -p "$snapshot_dir"
+    rsync -av --delete "$sandbox/" "$snapshot_dir/"
+}
+
+_apptainer_compare() {
+    local snapshot_dir="builds/current/snapshots"
+    local latest_two=($(ls -dt "$snapshot_dir"/* | head -n 2))
+    [[ ${#latest_two[@]} -ge 2 ]] && \
+        diff -r "${latest_two[1]}" "${latest_two[0]}" > "builds/current/changes/$(date +%Y%m%d_%H%M%S).diff"
+}
+
+_apptainer_update_recipe() {
+    local sandbox="image.sandbox"
+    local def_file="definitions/$(ls -t definitions/*.def | head -n 1)"
+    local changes_file="builds/current/changes/package_changes.txt"
+
+    mkdir -p "$(dirname "$changes_file")"
+    apptainer exec "$sandbox" apt list --installed > "$changes_file"
+
+    local temp_def="${def_file}.new"
+    cp "$def_file" "$temp_def"
+    diff <(grep "^apt install" "$def_file") "$changes_file" | \
+        grep "^>" | cut -d' ' -f1 > "builds/current/changes/new_packages.txt"
+    sed -i '/^%post/,/^%end/c\%post\n    apt update\n    apt install -y $(cat new_packages.txt)\n%end' "$temp_def"
+    mv "$temp_def" "$def_file"
+}
+
+_apptainer_test() {
+    local sandbox="image.sandbox"
+    local test_log="builds/current/tests/$(date +%Y%m%d_%H%M%S).log"
+    mkdir -p "$(dirname "$test_log")"
+
+    {
+        apptainer exec "$sandbox" /bin/bash --version
+        apptainer exec "$sandbox" apt update
+        apptainer exec "$sandbox" apt list --installed
+        apptainer exec "$sandbox" env
+    } 2>&1 | tee "$test_log"
+}
+
+_apptainer_validate() {
+    local sandbox="image.sandbox"
+    local validation_log="builds/current/validation_$(date +%Y%m%d_%H%M%S).log"
+
+    {
+        _apptainer_test
+        du -sh "$sandbox"
+        find "$sandbox" -type f -perm /111 -ls
+        apptainer exec "$sandbox" apt list --upgradable
+    } 2>&1 | tee "$validation_log"
+}
+
+_apptainer_init() {
+    local project_name=$1
+    mkdir -p {containers,definitions,builds/$project_name/{snapshots,tests,changes,info,sessions}}
+    [[ ! -f "definitions/${project_name}.def" ]] && cat > "definitions/${project_name}.def" << EOF
+Bootstrap: docker
+From: ubuntu:20.04
+%post
+    apt update
+    apt install -y python3
+%environment
+    export LC_ALL=C
+EOF
+}
+
+apptainer_dev() {
+    local project_name=$1
+    _apptainer_init "$project_name"
+
+    while true; do
+        case $(read -p "1)Shell 2)Update 3)Test 4)Snapshot 5)Compare 6)Validate q)Quit: " opt; echo $opt) in
+            1) _apptainer_dev_shell ;;
+            2) _apptainer_update_recipe ;;
+            3) _apptainer_test ;;
+            4) _apptainer_snapshot ;;
+            5) _apptainer_compare ;;
+            6) _apptainer_validate ;;
+            q) break ;;
+        esac
+    done
+}
+
+alias adev=apptainer_dev
+
+# EOF

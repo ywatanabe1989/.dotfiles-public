@@ -1,0 +1,29 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2025-03-18 14:27:02 (ywatanabe)"
+# File: /home/ywatanabe/.dotfiles/.screenrc
+
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+escape ^Jj
+
+hardstatus alwayslastline "[%02c] %`%-w%{=b bw}%n %t%{-}%+w"
+
+autodetach on
+startup_message off
+defscrollback 10000000
+
+# log
+logfile "$HOME/log/screenlog/%H-%Y%m%d-%c-%n.log"
+deflog on
+logtstamp on
+logtstamp after 600
+# deflog flush secs
+
+# display hardcopy
+hardcopydir "$HOME/log/hardcopy"
+hardcopy_append on
+
+defencoding utf-8
+
+# EOF

@@ -1,0 +1,112 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2025-04-19 04:19:37 (ywatanabe)"
+# File: /home/ywatanabe/.dotfiles/.bash.d/all/010_git/git_rename_remote.src
+
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+
+git_rename_remote() {
+    local old_name="$1"
+    local new_name="$2"
+
+    if [ -z "$old_name" ] || [ -z "$new_name" ]; then
+        echo "Usage: git-rename-remote <old_name> <new_name>"
+        return 1
+    fi
+
+    git remote rename "$old_name" "$new_name"
+}
+
+# Toggles the remote origin URL between HTTPS and SSH formats.
+git_remote_toggle_url() {
+    # Get the current URL for the 'origin' remote
+    local current_url
+    current_url=$(git remote get-url origin 2>/dev/null)
+    local exit_code=$?
+
+    # Check if the command succeeded and returned a URL
+    if [ $exit_code -ne 0 ] || [ -z "$current_url" ]; then
+        echo "Error: Could not get URL for remote 'origin'." >&2
+        echo "       Are you in a git repository with an 'origin' remote?" >&2
+        return 1
+    fi
+
+    local new_url=""
+    local domain=""
+    local path=""
+    local path_no_git=""
+
+    # Check the format of the current URL and convert it
+    if [[ "$current_url" == https://* ]]; then
+        # Convert HTTPS to SSH
+        # Example: https://github.com/user/repo.git -> git@github.com:user/repo.git
+        # Example: https://github.com/user/repo -> git@github.com:user/repo.git
+        domain=$(echo "$current_url" | sed -E 's#https://([^/]+)/.*#\1#')
+        path=$(echo "$current_url" | sed -E 's#https://[^/]+/(.*)#\1#')
+        # Remove trailing .git if present
+        path_no_git=${path%.git}
+        # Construct SSH URL, ensuring .git is appended once
+        if [[ -n "$domain" && -n "$path_no_git" ]]; then
+            new_url="git@${domain}:${path_no_git}.git"
+        fi
+
+    elif [[ "$current_url" == git@* ]]; then
+        # Convert SSH to HTTPS
+        # Example: git@github.com:user/repo.git -> https://github.com/user/repo.git
+        # Example: git@github.com:user/repo -> https://github.com/user/repo.git
+        domain=$(echo "$current_url" | sed -E 's#git@([^:]+):.*#\1#')
+        path=$(echo "$current_url" | sed -E 's#git@[^:]+:(.*)#\1#')
+        # Remove trailing .git if present
+        path_no_git=${path%.git}
+        # Construct HTTPS URL, ensuring .git is appended once
+        if [[ -n "$domain" && -n "$path_no_git" ]]; then
+            new_url="https://${domain}/${path_no_git}.git"
+        fi
+    else
+        echo "Error: Current origin URL is neither HTTPS nor SSH format:" >&2
+        echo "       '$current_url'" >&2
+        return 1
+    fi
+
+    # Check if a new URL was successfully generated
+    if [ -z "$new_url" ]; then
+        echo "Error: Failed to convert URL format." >&2
+        echo "       Current URL: '$current_url'" >&2
+        return 1
+    fi
+
+    # Check if the new URL is the same as the old (should not happen with valid input)
+    if [ "$new_url" == "$current_url" ]; then
+        echo "Warning: Conversion resulted in the same URL. No change made." >&2
+        echo "         Current URL: '$current_url'" >&2
+        return 0 # Return success as no operation needed/possible
+    fi
+
+
+    # Set the new URL
+    echo "Current URL: $current_url"
+    echo "New URL    : $new_url"
+    git remote set-url origin "$new_url"
+    local set_exit_code=$?
+
+    if [ $set_exit_code -ne 0 ]; then
+        echo "Error: Failed to set new URL for remote 'origin'." >&2
+        # Attempt to restore the original URL
+        git remote set-url origin "$current_url" >/dev/null 2>&1
+        return 1
+    else
+        echo "Successfully changed remote 'origin' URL."
+    fi
+
+    return 0
+}
+
+
+git_rename_origin() {
+    NEW_REPO_NAME="$1"
+    git remote set-url origin $GITHUB_URL/$NEW_REPO_NAME.git
+    git remote -v
+    }
+
+# EOF

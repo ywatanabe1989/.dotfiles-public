@@ -1,0 +1,154 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2025-09-16 16:24:52 (ywatanabe)"
+# File: /ssh:sp:/home/ywatanabe/.bash.d/all/010_slurm/squeue.src
+
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# ---------------------------------------
+
+# Slurm format string
+_SLURM_FORMAT="%i %j %t %D %R %b %C %m %l %L"
+
+# Format output with column widths
+_list_jobs() {
+    local fmt="%-4s %-16s %-10s %-4s %-5s %-20s %-15s %-3s %-7s %-11s %-11s\n"
+    printf "$fmt" "IDX" "JOBID" "NAME" "ST" "NODES" "NODELIST(REASON)" "TRES_PER_NODE" "CPU" "MIN_MEM" "TIME_LIMIT" "TIME_LEFT"
+    printf "%s\n" "--------------------------------------------------------------------------------------------------"
+
+    local counter=1
+    squeue -u $USER -h -o "$_SLURM_FORMAT" | while read -r jobid name state nodes nodelist tres cpu mem tlimit tleft; do
+        printf "$fmt" "[$counter]" "$jobid" "$name" "$state" "$nodes" "$nodelist" "$tres" "$cpu" "$mem" "$tlimit" "$tleft"
+        counter=$((counter + 1))
+    done
+}
+
+# Get job ID from index
+# _get_jobid() {
+#     local index=$1
+#     local jobs=($(squeue -h -u $USER -o "%i" | sed 's/\[.*\]//g'))
+#     local n=${#jobs[@]}
+
+#     # Handle negative indices
+#     if [[ $index =~ ^-[0-9]+$ ]]; then
+#         index=$((n + index))
+#     else
+#         ((index--))
+#     fi
+
+#     # Check bounds
+#     if [ $index -lt 0 ] || [ $index -ge $n ]; then
+#         return 1
+#     fi
+
+#     job_id="${jobs[$index]}"
+
+#     # Check if job_id contains an underscore
+#     if [[ "$job_id" == *"_"* ]]; then
+#         # Print the part before the first underscore
+#         echo "${job_id%%_*}"
+#     else
+#         # Print the full job_id
+#         echo "$job_id"
+#     fi
+#     return 0
+# }
+
+
+# _get_jobid() {
+#     local index=$1
+#     echo "DEBUG: _get_jobid input: '$index'" >&2
+
+#     local jobs=($(squeue -h -u $USER -o "%i" | sed 's/\[.*\]//g'))
+#     echo "DEBUG: Available jobs: ${jobs[*]}" >&2
+
+#     local n=${#jobs[@]}
+#     echo "DEBUG: Number of jobs: $n" >&2
+
+#     if [[ $index =~ ^-[0-9]+$ ]]; then
+#         index=$((n + index))
+#     else
+#         ((index--))
+#     fi
+
+#     echo "DEBUG: Adjusted index: $index" >&2
+
+#     if [ $index -lt 0 ] || [ $index -ge $n ]; then
+#         echo "DEBUG: Index out of bounds" >&2
+#         return 1
+#     fi
+
+#     job_id="${jobs[$index]}"
+#     echo "DEBUG: Raw job_id: '$job_id'" >&2
+
+#     if [[ "$job_id" == *"_"* ]]; then
+#         echo "${job_id%%_*}"
+#     else
+#         echo "$job_id"
+#     fi
+#     return 0
+# }
+_get_jobid() {
+    local index=$1
+    local jobs=($(squeue -h -u $USER -o "%i" | sed 's/\[.*\]//g'))
+    local n=${#jobs[@]}
+
+    if [[ $index =~ ^-[0-9]+$ ]]; then
+        index=$((n + index))
+    else
+        ((index--))
+    fi
+
+    if [ $index -lt 0 ] || [ $index -ge $n ]; then
+        return 1
+    fi
+
+    job_id="${jobs[$index]}"
+    echo "$job_id"
+    return 0
+}
+
+# Get job name from index
+_get_jobname() {
+    local index=$1
+    squeue -u $USER -h -o "%j" | sed -n "${index}p"
+}
+
+# # Alias for squeue with indices
+# _watch_list_jobs() {
+#     export _SLURM_FORMAT
+#     export -f _list_jobs printf
+#     BASH_ENV=<(declare -f _list_jobs) watch -n 1 -d bash -c '_list_jobs'
+# }
+# Alias for squeue with indices
+_watch_list_jobs() {
+    export _SLURM_FORMAT
+    export -f _list_jobs
+    BASH_ENV=<(declare -f _list_jobs) watch -n 1 -d bash -c '_list_jobs'
+}
+
+alias s="_watch_list_jobs"
+
+alias sqid="squeue -u $USER -h -o '%i'"
+
+
+_s_running() {
+    local fmt="%-4s %-16s %-10s %-4s %-5s %-20s %-15s %-3s %-7s %-11s %-11s\n"
+    printf "$fmt" "IDX" "JOBID" "NAME" "ST" "NODES" "NODELIST(REASON)" "TRES_PER_NODE" "CPU" "MIN_MEM" "TIME_LIMIT" "TIME_LEFT"
+    printf "%s\n" "--------------------------------------------------------------------------------------------------"
+
+    local counter=1
+    squeue -u $USER -h -o "$_SLURM_FORMAT" -t RUNNING | while read -r jobid name state nodes nodelist tres cpu mem tlimit tleft; do
+        printf "$fmt" "[$counter]" "$jobid" "$name" "$state" "$nodes" "$nodelist" "$tres" "$cpu" "$mem" "$tlimit" "$tleft"
+        counter=$((counter + 1))
+    done
+}
+
+_watch_running_jobs() {
+    export _SLURM_FORMAT
+    export -f _s_running
+    BASH_ENV=<(declare -f _s_running) watch -n 1 -d bash -c '_s_running'
+}
+
+alias s_running="_watch_running_jobs"
+
+# EOF

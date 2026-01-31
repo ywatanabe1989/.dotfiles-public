@@ -1,0 +1,211 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2026-01-14 23:33:30 (ywatanabe)"
+# File: /home/ywatanabe/.dotfiles/.bash.d/all/010_cd.src
+
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# ---------------------------------------
+
+################################################################################
+# Directory Tracing
+################################################################################
+# Initialize an empty directory stack
+MAX_DIR_HISTORY=7
+
+# Function to add current directory to stack
+push_dir() {
+    local current_dir=$(pwd)
+    DIR_STACK=("$current_dir" "${DIR_STACK[@]}")
+
+    # Trim the stack to keep only the latest 7 entries
+    if [ ${#DIR_STACK[@]} -gt 7 ]; then
+        DIR_STACK=("${DIR_STACK[@]:0:7}")
+    fi
+}
+
+# Function to display the current directory stack
+cd_list() {
+    # echo "Current directory stack (most recent first):"
+    local stack_size=${#DIR_STACK[@]}
+    local display_count=$((stack_size < 7 ? stack_size : 7))
+
+    for ((i=display_count-1; i>=0; i--)); do
+        printf "%2d: %s\n" $((-i)) "${DIR_STACK[i]}"
+    done
+
+}
+
+# Function to change directory and update stack
+cd() {
+    local target="$1"
+    if [[ -f "$target" ]]; then
+        builtin cd "$(dirname "$target")"
+    else
+        builtin cd "$@"
+    fi
+
+    if [[ -d .venv ]]; then
+        source .venv/bin/activate
+    else
+        if command -v deactivate &> /dev/null; then
+            deactivate 2>/dev/null
+        fi
+    fi
+    push_dir
+}
+
+# Function to change to a directory in the stack
+cd_to_stack() {
+    local num=$1
+    local dir=$(cd_list | grep -- "-${num}:" | awk '{print $2}')
+    if [ -n "$dir" ]; then
+        cd "$dir"
+    else
+        echo "No directory at position -${num}"
+    fi
+}
+
+# Generate functions cd1 to cd7
+for i in {1..7}; do
+    eval "cd${i}() { cd_to_stack $i; }"
+done
+
+# Function to go to next directory
+cd_next() {
+    if [ ${#DIR_STACK[@]} -eq 0 ]; then
+        echo "No next directory in stack"
+    else
+        next_dir="${DIR_STACK[-1]}"
+        DIR_STACK=("${DIR_STACK[@]:0:${#DIR_STACK[@]}-1}")
+        builtin cd "$next_dir"
+        echo "Changed to: $next_dir"
+    fi
+}
+
+# Function to go to previous directory
+cd_prev() {
+    if [ ${#DIR_STACK[@]} -lt 2 ]; then
+        echo "No previous directory in stack"
+    else
+        prev_dir="${DIR_STACK[-2]}"
+        DIR_STACK=("${DIR_STACK[@]:0:${#DIR_STACK[@]}-2}")
+        builtin cd "$prev_dir"
+        echo "Changed to: $prev_dir"
+    fi
+}
+
+# Aliases
+alias cdn="cd_next"
+alias cdp="cd_prev"
+alias cdl="cd_list"
+
+################################################################################
+# Set current directory in ~/.bashrc
+################################################################################
+set_current_directory ()
+{
+    # Define markers
+    START_MARKER="### scd start ###"
+    END_MARKER="### scd end ###"
+
+    # Temporary file to hold new settings
+    TMP_FILE=$(mktemp)
+
+    # Create the new settings block
+    echo "$START_MARKER" > $TMP_FILE
+    echo "if [ -z "\$NO_SCD" ]; then " >> $TMP_FILE
+    echo "    if [ -d $(pwd) ]; then" >> $TMP_FILE
+    echo "        cd $(pwd)" >> $TMP_FILE
+    echo "    fi" >> $TMP_FILE
+    echo "fi" >> $TMP_FILE
+    echo "" >> $TMP_FILE
+    echo "if [ -f .venv/bin/activate ]; then" >> $TMP_FILE
+    echo "    source .venv/bin/activate" >> $TMP_FILE
+    echo "fi" >> $TMP_FILE
+    echo "$END_MARKER" >> $TMP_FILE
+
+    # Backup the original .bashrc file
+    yes | cp -f ~/.bashrc ~/.bashrc.bak >/dev/null 2>&1
+
+    # Remove old block if it exists
+    sed -i "/$START_MARKER/,/$END_MARKER/d" ~/.bashrc
+
+    # Append new block to the end of .bashrc
+    cat $TMP_FILE >> ~/.bashrc
+
+    # Remove the temporary file
+    rm -f $TMP_FILE
+}
+
+# Aliases
+alias scd="set_current_directory"
+
+################################################################################
+# Parent directoreis
+################################################################################
+alias ..='cd ..'
+alias ...='cd ../../../'
+alias ....='cd ../../../../'
+alias .....='cd ../../../../'
+
+################################################################################
+# Direct cd
+################################################################################
+# Dotfiles
+alias dot='cd ~/.dotfiles'
+alias bashd="cd ~/.bash.d/"
+alias inits='cd ~/.emacs.d/inits'
+
+# ETC
+alias ubuntu2024="cd /mnt/ubuntu2004/"
+alias root="cd /"
+alias opt="cd /opt"
+alias etc="cd /etc"
+alias bin="cd ~/.bin"
+
+####################
+# WORK
+####################
+
+# paper
+alias paper="cd $PAPER_DIRECTORY"
+alias manuscript="cd $PAPER_DIRECTORY/manuscript"
+alias supplementary="cd $PAPER_DIRECTORY/supplementary"
+alias revision="cd $PAPER_DIRECTORY/revision"
+alias manu="manuscript"
+alias supple="supplementary"
+alias rev="revision"
+
+# projects
+# alias proj='cd $HOME/proj'
+generate_aliases_for_direct_cd_to_projects() {
+    local proj_dir="$HOME/proj"
+
+    # Exit if proj_dir does not exist
+    [[ ! -d "$proj_dir" ]] && return
+
+    # Create aliases for each directory
+    for dir in "$proj_dir" "$proj_dir"/*/; do
+        if [[ -d "$dir" ]]; then
+            local alias_name=$(basename "$dir")
+            alias "${alias_name}-cd"="cd $dir"
+        fi
+    done
+}
+generate_aliases_for_direct_cd_to_projects
+
+# Claude projects
+generate_aliases_for_direct_cd_to_claude_projects() {
+    local claude_work_dir="$HOME/proj/.claude-worktree"
+    [[ ! -d "$claude_work_dir" ]] || [[ ! -L "$claude_work_dir" ]] && return
+
+    for dir in "$claude_work_dir" "$claude_work_dir"/*/; do
+        if [[ -d "$dir" || -L "$dir" ]]; then
+            local alias_name=$(basename "$dir")
+            alias "${alias_name}c"="cd $dir"
+        fi
+    done
+}
+generate_aliases_for_direct_cd_to_claude_projects
+
+# EOF

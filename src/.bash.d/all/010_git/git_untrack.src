@@ -1,0 +1,112 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2025-01-13 (ywatanabe)"
+# File: /home/ywatanabe/.dotfiles/.bash.d/all/010_git/git_untrack.src
+
+git_untrack() {
+    local dry_run=false
+    local yes=false
+    local no_gitignore=false
+    local args=()
+
+    usage() {
+        echo "Usage: untrack [-n|--dry-run] [-y|--yes] [--no-gitignore] <pattern...>"
+        echo "Remove files from git tracking (keeps local files)"
+        echo
+        echo "Options:"
+        echo "  -n, --dry-run      Show what would be untracked without doing it"
+        echo "  -y, --yes          Skip confirmation prompt"
+        echo "  --no-gitignore     Don't add patterns to .gitignore"
+        echo "  -h, --help         Show this help"
+        echo
+        echo "Examples:"
+        echo "  untrack file.txt          # Untrack specific file"
+        echo "  untrack '**/.old'         # Untrack all .old dirs (quote for glob)"
+        echo "  untrack -n '**/*.log'     # Preview what would be untracked"
+        echo "  untrack -y '**/.old'      # Untrack without confirmation"
+    }
+
+    # Parse arguments
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+        -h | --help)
+            usage
+            return 0
+            ;;
+        -n | --dry-run)
+            dry_run=true
+            shift
+            ;;
+        -y | --yes)
+            yes=true
+            shift
+            ;;
+        --no-gitignore)
+            no_gitignore=true
+            shift
+            ;;
+        *)
+            args+=("$1")
+            shift
+            ;;
+        esac
+    done
+
+    # Check if any patterns were provided
+    if [[ ${#args[@]} -eq 0 ]]; then
+        echo "Error: No pattern specified."
+        usage
+        return 1
+    fi
+
+    # Find tracked files matching patterns
+    local files
+    files=$(git ls-files -- "${args[@]}" 2>/dev/null)
+
+    if [[ -z "$files" ]]; then
+        echo "No tracked files match the pattern."
+        return 0
+    fi
+
+    local count
+    count=$(echo "$files" | wc -l)
+
+    echo "=== Files to untrack ($count files) ==="
+    echo "$files"
+    echo
+
+    if $dry_run; then
+        echo "(Dry run - no changes made)"
+        return 0
+    fi
+
+    # Ask for confirmation unless -y flag
+    if ! $yes; then
+        read -p "Proceed? (y/n) " -n 1 -r
+        echo
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            echo "Cancelled."
+            return 1
+        fi
+    fi
+
+    # Unstage if staged, then untrack
+    git restore --staged -- "${args[@]}" 2>/dev/null
+    echo "$files" | xargs -d '\n' git rm --cached -r --
+    echo "Files untracked (kept locally)."
+
+    # Add to .gitignore unless --no-gitignore
+    if ! $no_gitignore; then
+        for pattern in "${args[@]}"; do
+            if ! grep -qxF "$pattern" .gitignore 2>/dev/null; then
+                echo "$pattern" >>.gitignore
+            fi
+        done
+        git add .gitignore
+        echo "Patterns added to .gitignore."
+    fi
+}
+
+alias untrack="git_untrack"
+
+# EOF

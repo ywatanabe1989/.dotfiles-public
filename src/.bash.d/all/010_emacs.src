@@ -1,0 +1,71 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2025-08-24 23:37:32 (ywatanabe)"
+# File: /home/ywatanabe/.dotfiles/.bash.d/all/010_emacs.src
+
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# ---------------------------------------
+
+export EMACS_SERVER_FILE="$HOME/.emacs.d/server/server"
+export EMACS_SOCKET_NAME="$HOME/.emacs.d/server/server"
+
+emacs-start-daemon() {
+    if ! emacsclient -e 0 > /dev/null 2>&1; then
+        (cd && HOME=$HOME emacs --daemon -l "$HOME/.emacs.d/init.el" && cd - > /dev/null 2>&1)
+    fi
+}
+
+e() {
+    # Start Emacs daemon if not Emacs daemon running
+    if ! emacsclient -e 0 > /dev/null 2>&1; then
+        emacs-start-daemon
+    fi
+
+    # Connect to the client with new window
+    HOME=$HOME emacsclient -cn "$@" & clear
+}
+
+# alias e="emacs-start-and-open-daemon"
+
+emacs_remove_elc() {
+    find ~/.emacs.d/ -name '*.elc' -delete
+}
+
+emacs_compile_all() {
+    find ~/.emacs.d/ -name '*.el' -exec emacs -batch -f batch-byte-compile {} +
+}
+
+emacs_recompile() {
+    emacs_remove_elc
+    emacs_compile_all
+}
+
+alias kille="emacsclient -e '(kill-emacs)'"
+alias ree="emacsclient -e '(kill-emacs)' && emacs-start-daemon && e"
+
+
+
+function remote-emacs() {
+    local remote="${1:-ywatanabe@spartan-login1.hpc.unimelb.edu.au}"
+
+    # Show help message
+    if [[ "$1" == "-h" || "$1" == "--help" ]]; then
+        echo "Remote Emacs Setup and Usage"
+        echo ""
+        echo "Setup on HPC:"
+        echo "  pkill emacs"
+        echo "  rm -f ~/.emacs.d/server/*"
+        echo "  rm -f /home/ywatanabe/server"
+        echo "  emacs --daemon"
+        echo ""
+        echo "Usage:"
+        echo "  remote-emacs [host]   Start remote Emacs session"
+        echo "  remote-emacs -h       Show this help message"
+        return 0
+    fi
+
+    # Start remote emacs
+    ssh -X $remote -t "emacsclient -c || emacs"
+}
+
+# EOF

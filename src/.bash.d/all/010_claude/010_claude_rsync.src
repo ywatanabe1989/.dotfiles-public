@@ -1,0 +1,51 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2025-12-04 (ywatanabe)"
+# File: /home/ywatanabe/.dotfiles/.bash.d/all/010_claude/010_claude_rsync.src
+# Description: File and directory synchronization utilities for Claude Code
+
+_cld_rsync_file() {
+    local src=$1 tgt=$2
+    [[ ! -f "$src" ]] && return 1
+    [[ "$src" -ef "$tgt" ]] && return 0
+
+    mkdir -p "$(dirname "$tgt")" >/dev/null
+    [[ -f "$tgt" ]] && chmod 0744 "$tgt"
+    cat "$src" >"$tgt"
+}
+
+_cld_rsync_dir() {
+    local src=$1 tgt=$2
+    [[ ! -d "$src" ]] && return 1
+    [[ "$src" -ef "$tgt" ]] && return 0
+    rm -rf "$tgt" >/dev/null
+    mkdir -p "$tgt" >/dev/null
+    echo_info "$src -> $tgt"
+    # Exclude .git, .old, docs/, .claude/ to prevent circular references
+    # For project-switch: only sync *example* files, exclude all others
+    rsync -au --exclude='.git' --exclude='.old' --exclude='docs' --exclude='.claude' \
+        --include='project-switch/' \
+        --include='project-switch/*example*' \
+        --exclude='project-switch/*' \
+        "$src" "$tgt"
+}
+
+_cld_rsync_to_cld_dir() {
+    local project_root=$1
+    local tgt_dir="$project_root/docs/to_claude"
+    local subdirs=("guidelines" "bin" "examples" "agents" "commands" "skills" "hooks")
+
+    _cld_manage_permissions "$tgt_dir" unprotect
+    _cld_cleanup_old_files "$tgt_dir"
+
+    set +m
+    for subdir in "${subdirs[@]}"; do
+        _cld_rsync_dir "$HOME/.claude/to_claude/$subdir/" "$tgt_dir/$subdir/" &>/dev/null &
+    done
+    wait
+    set -m
+
+    _cld_manage_permissions "$tgt_dir" protect
+}
+
+# EOF

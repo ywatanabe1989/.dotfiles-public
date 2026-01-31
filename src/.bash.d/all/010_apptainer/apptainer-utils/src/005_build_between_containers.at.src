@@ -1,0 +1,79 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2025-03-08 12:22:43 (ywatanabe)"
+# File: /home/ywatanabe/.dotfiles/.bash.d/all/010_apptainer/apptainer-utils/src/005_build_between_containers.at.src
+
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+
+# | **Building** |
+# | | `abuild_sand2sif` | Convert sandbox to SIF | `abuild_sand2sif /path/to/image.sandbox` | `/path/to/image.sif`, `/path/to/image.sif.log` |
+# | | `abuild_sif2sand` | Convert SIF to sandbox | `abuild_sif2sand /path/to/image.sif` | `/path/to/image.sandbox`, `/path/to/image.sandbox.log` |
+
+apptainer_build_sif2sand() {
+    if [[ "$1" == "-h" || "$1" == "--help" || -z "$1" ]]; then
+        echo "Converts SIF to sandbox format"
+        echo "Example: apptainer_build_sif2sand /path/to/image.sif"
+        echo "Example: abuild_sif2sand /path/to/image.sif"
+        echo "Usage: /path/to/image.sif -> /path/to/image.sandbox"
+        return 0
+    fi
+
+    local SRC_SIF_PATH="$1"
+    local TGT_SAND_PATH="${SRC_SIF_PATH%.sif}.sandbox"
+    local LOG_PATH="${TGT_SAND_PATH}-sif2sand.log"
+    local OPTIONS="--sandbox"
+
+    if [ ! -f "$SRC_SIF_PATH" ]; then
+        echo "Error: $SRC_SIF_PATH not found"
+        return 1
+    fi
+
+    if [ ! "${SRC_SIF_PATH##*.}" = "sif" ]; then
+        echo "Error: Input file must be a .sif file"
+        return 1
+    fi
+
+    echo_eval "apptainer build $OPTIONS \
+    $TGT_SAND_PATH \
+    $SRC_SIF_PATH \
+    2>&1 | tee $LOG_PATH"
+}
+
+
+apptainer_build_sand2sif() {
+    if [[ "$1" == "-h" || "$1" == "--help" || -z "$1" ]]; then
+        echo "Converts sandbox format to SIF"
+        echo "Example: apptainer_build_sand2sif /path/to/image.sandbox"
+        echo "Example: abuild_sand2sif /path/to/image.sandbox"
+        echo "Usage: /path/to/image.sandbox -> /path/to/image.sif"
+        return 0
+    fi
+
+    local SRC_SAND_PATH="$1"
+    local TGT_SIF_PATH="${SRC_SAND_PATH%.sandbox}.sif"
+    local LOG_PATH="${TGT_SIF_PATH}-sand2sif.log"
+    local OPTIONS=""
+
+    if [ ! -d "$SRC_SAND_PATH" ]; then
+        echo "Error: Sandbox directory $SRC_SAND_PATH not found"
+        return 1
+    fi
+
+    if [ ! "${SRC_SAND_PATH##*.}" = "sandbox" ]; then
+        echo "Error: Input directory must have .sandbox extension"
+        return 1
+    fi
+
+    echo_eval "apptainer build $OPTIONS \
+    $TGT_SIF_PATH \
+    $SRC_SAND_PATH \
+    2>&1 | tee $LOG_PATH"
+}
+
+
+# Aliases
+alias abuild_sif2sand=apptainer_build_sif2sand=
+alias abuild_sand2sif=apptainer_build_sand2sif
+
+# EOF

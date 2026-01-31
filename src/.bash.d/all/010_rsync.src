@@ -1,0 +1,23 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2025-05-12 12:48:22 (ywatanabe)"
+# File: /home/ywatanabe/.bash.d/all/010_rsync.src
+
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# ---------------------------------------
+
+rsync_check() {
+    # Usage: rsync-check /path/to/source /path/to/destination
+    local source_dir="$1"
+    local dest_dir="$2"
+
+    rsync_output=$(rsync -azn --remove-source-files "$source_dir" "$dest_dir")
+
+    if [ -z "$rsync_output" ]; then
+        echo "No differences found."
+    else
+        echo "$rsync_output"
+    fi
+}
+
+# EOF

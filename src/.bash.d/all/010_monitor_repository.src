@@ -1,0 +1,9 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2025-05-12 12:48:18 (ywatanabe)"
+# File: /home/ywatanabe/.bash.d/all/010_monitor_repository.src
+
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# ---------------------------------------
+
+# EOF

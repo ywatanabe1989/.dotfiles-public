@@ -1,0 +1,83 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2025-05-12 12:48:16 (ywatanabe)"
+# File: /home/ywatanabe/.bash.d/all/010_lisp.src
+
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# ---------------------------------------
+
+SRC="$HOME/.emacs.d/lisp/elisp-test"
+SRC="$HOME/.emacs.d/lisp/elisp-test"
+
+lisp_copy_run_tests() {
+    local tgt=$1
+    cat "$SRC/run_tests.sh" > "$tgt/run_tests.sh"
+}
+
+lisp_copy_run_tests_batch() {
+    dirs=(
+        $HOME/.emacs.d/lisp/elinter
+        $HOME/.emacs.d/lisp/genai
+        $HOME/.emacs.d/lisp/emacs-claude-code
+        $HOME/.emacs.d/lisp/emacs-gif-screencast
+        $HOME/.emacs.d/lisp/emacs-buffer-navigation
+        $HOME/.emacs.d/lisp/emacs-monitor-repository
+        $HOME/.emacs.d/lisp/emacs-message
+        $HOME/.emacs.d/lisp/emacs-cheat
+        $HOME/.emacs.d/lisp/emacs-llm
+        $HOME/.emacs.d/lisp/emacs-header-footer
+        $HOME/.emacs.d/lisp/_emacs-semantic-search
+        $HOME/.emacs.d/lisp/python-import-manager
+        $HOME/.emacs.d/lisp/emacs-python-config
+        $HOME/.emacs.d/lisp/emacs-semantic-search
+        $HOME/.emacs.d/lisp/emacs-tab-manager
+        $HOME/.emacs.d/lisp/emacs-recentf-project
+        $HOME/.emacs.d/lisp/whisper-live
+        $HOME/.emacs.d/lisp/emacs-spinner
+        $HOME/.emacs.d/lisp/emacs-slack
+        $HOME/.emacs.d/lisp/gif-screenshot.el
+    )
+
+    for dir in "${dirs[@]}"; do
+        # Check if path is a directory
+        if [ -d "$dir" ]; then
+
+            echo "Processing $dir..."
+
+            # Copy settings file with force flag to prevent prompts
+            lisp_copy_run_tests "$dir"
+
+            if [ $? -eq 0 ]; then
+                echo "✓ $dir"
+            else
+                echo "Failed for $dir"
+            fi
+        else
+            echo "Not found: $dir"
+        fi
+    done
+}
+
+alias elisp-test="cd $HOME/.emacs.d/lisp/elisp-test"
+alias elinter="cd $HOME/.emacs.d/lisp/elinter"
+alias genai="cd $HOME/.emacs.d/lisp/genai"
+alias emacs-claude-code="cd $HOME/.emacs.d/lisp/emacs-claude-code"
+alias emacs-gif-screencast="cd $HOME/.emacs.d/lisp/emacs-gif-screencast"
+alias emacs-buffer-navigation="cd $HOME/.emacs.d/lisp/emacs-buffer-navigation"
+alias emacs-monitor-repository="cd $HOME/.emacs.d/lisp/emacs-monitor-repository"
+alias emacs-message="cd $HOME/.emacs.d/lisp/emacs-message"
+alias emacs-cheat="cd $HOME/.emacs.d/lisp/emacs-cheat"
+alias emacs-llm="cd $HOME/.emacs.d/lisp/emacs-llm"
+alias emacs-header-footer="cd $HOME/.emacs.d/lisp/emacs-header-footer"
+alias _emacs-semantic-search="cd $HOME/.emacs.d/lisp/_emacs-semantic-search"
+alias python-import-manager="cd $HOME/.emacs.d/lisp/python-import-manager"
+alias emacs-python-config="cd $HOME/.emacs.d/lisp/emacs-python-config"
+alias emacs-semantic-search="cd $HOME/.emacs.d/lisp/emacs-semantic-search"
+alias emacs-tab-manager="cd $HOME/.emacs.d/lisp/emacs-tab-manager"
+alias emacs-recentf-project="cd $HOME/.emacs.d/lisp/emacs-recentf-project"
+alias whisper-live="cd $HOME/.emacs.d/lisp/whisper-live"
+alias emacs-spinner="cd $HOME/.emacs.d/lisp/emacs-spinner"
+alias emacs-slack="cd $HOME/.emacs.d/lisp/emacs-slack"
+alias gif-screenshot.el="cd $HOME/.emacs.d/lisp/gif-screenshot.el"
+
+# EOF

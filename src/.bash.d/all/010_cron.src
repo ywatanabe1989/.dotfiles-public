@@ -1,0 +1,16 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2025-05-12 12:48:13 (ywatanabe)"
+# File: /home/ywatanabe/.bash.d/all/010_cron.src
+
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# ---------------------------------------
+
+alias crontab="EDITOR=gedit crontab"
+
+# ssh-agent > ~/.ssh/agent-environment
+# chmod 600 ~/.ssh/agent-environment
+# . ~/.ssh/agent-environment
+# ssh-add
+
+# EOF

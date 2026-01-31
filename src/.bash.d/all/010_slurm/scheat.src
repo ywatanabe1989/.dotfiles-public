@@ -1,0 +1,81 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2025-04-05 14:42:00 (ywatanabe)"
+# File: /ssh:sp:/home/ywatanabe/.dotfiles/.bash.d/all/030-slurm/scheat.src
+
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+scheat() {
+    local mode=${1:-all}
+
+    case "$mode" in
+        basic)
+            echo "=== BASIC SLURM COMMANDS ==="
+            echo "sinfo                   - View information about partitions and nodes"
+            echo "squeue                  - View information about jobs in the queue"
+            echo "sbatch <script.sh>      - Submit a batch script"
+            echo "scancel <jobid>         - Cancel a job"
+            echo "scontrol show job <id>  - View detailed job information"
+            ;;
+
+        interactive)
+            echo "=== INTERACTIVE SESSION COMMANDS ==="
+            echo "sint -s                 - Short session (1 GPU, 4h, 32GB)"
+            echo "sint -l                 - Long session (4 GPU, 7d, 256GB)"
+            echo "sint -g 2 -t 12:00:00 -m 64 -p gpu-a100  - Custom session"
+            echo "sinteractive            - Basic interactive job"
+            ;;
+
+        jobs)
+            echo "=== JOB MANAGEMENT COMMANDS ==="
+            echo "s                       - List all your jobs with indices"
+            echo "scan <idx>              - Cancel job by index"
+            echo "scan -a                 - Cancel all your jobs"
+            echo "squeue -u \$USER        - List your jobs"
+            echo "sjump <idx>             - SSH to node running job"
+            echo "sqid                    - Get the ID of the most recent job"
+            ;;
+
+        logs)
+            echo "=== LOG COMMANDS ==="
+            echo "scat <idx> [out|err]    - View job output/error"
+            echo "stail <idx> [out|err]   - Follow job output/error in real-time"
+            echo "shead <idx> [out|err]   - View first lines of job output/error"
+            ;;
+
+        submit)
+            echo "=== JOB SUBMISSION EXAMPLES ==="
+            echo "sbatch script.sh        - Submit a batch script"
+            echo "sbatch --array=1-10 script.sh - Submit an array job"
+            echo "slush -t 4:00:00 -m 64 script.sh - Submit with nice defaults"
+            echo
+            echo "Common sbatch options:"
+            echo "  --partition=<name>    - Request specific partition"
+            echo "  --time=<time>         - Set time limit (DD-HH:MM:SS)"
+            echo "  --mem=<MB>            - Request memory"
+            echo "  --gres=gpu:<N>        - Request N GPUs"
+            echo "  --cpus-per-task=<N>   - Request N CPUs per task"
+            ;;
+
+        all|*)
+            echo "=== SLURM CHEATSHEET ==="
+            echo "Use 'scheat <section>' for detailed help on:"
+            echo "  - basic       : Basic SLURM commands"
+            echo "  - interactive : Interactive session commands"
+            echo "  - jobs        : Job management commands"
+            echo "  - logs        : Log viewing commands"
+            echo "  - submit      : Job submission examples"
+            echo
+            echo "Quick Reference:"
+            echo "  s             : List your jobs with indices"
+            echo "  sint -s       : Start short interactive GPU session"
+            echo "  sint -l       : Start long interactive GPU session"
+            echo "  scan <idx>    : Cancel job by index"
+            echo "  sjump <idx>   : SSH to node running job"
+            echo "  scat <idx>    : View job output"
+            echo "  stail <idx>   : Monitor job output in real-time"
+            ;;
+    esac
+}
+
+# EOF

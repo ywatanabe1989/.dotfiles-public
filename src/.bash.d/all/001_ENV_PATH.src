@@ -1,0 +1,132 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2025-10-06 09:23:38 (ywatanabe)"
+# File: /home/ywatanabe/.dotfiles/.bash.d/all/001_ENV_PATH.src
+
+# shellcheck disable=SC2034,SC2155,SC2086
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# ---------------------------------------
+
+# Functions
+remove_duplicate_paths() {
+    local PATH_VAR_NAME=$1
+    local ORIGINAL_PATH=$(eval echo \$$PATH_VAR_NAME)
+    local NEW_PATH=""
+    local IFS=':'
+
+    for DIR in $ORIGINAL_PATH; do
+        if [[ -n "$DIR" && ":$NEW_PATH:" != *":$DIR:"* ]]; then
+            NEW_PATH="${NEW_PATH:+$NEW_PATH:}$DIR"
+        fi
+    done
+
+    export $PATH_VAR_NAME="$NEW_PATH"
+}
+
+truncate_path() {
+    local PATH_VAR_NAME=$1
+    local ORIGINAL_PATH=$(eval echo \$$PATH_VAR_NAME)
+    # Remove leading/trailing colons and replace double colons with single ones
+    local NEW_PATH="${ORIGINAL_PATH#:}"
+    NEW_PATH="${NEW_PATH%:}"
+    NEW_PATH=$(echo "$NEW_PATH" | sed 's/::/:/g; s/::/:/g')
+    echo "$NEW_PATH"
+}
+
+cleanup_path() {
+    local path_var_name="$1"
+    local original_path=$(eval echo \$$path_var_name)
+
+    # Remove leading/trailing colons and double colons
+    local cleaned_path="${original_path#:}"
+    cleaned_path="${cleaned_path%:}"
+    cleaned_path=$(echo "$cleaned_path" | sed 's/::/:/g; s/::/:/g')
+
+    # Export the cleaned path
+    eval export $path_var_name="$cleaned_path"
+}
+
+export NPM_GLOBAL_BIN_PATH="$HOME/.npm-global/bin"
+
+# PATH
+unset PATH
+export PATH=$PATH:$NPM_GLOBAL_BIN_PATH:$HOME/local/bin:$HOME/.local/bin:/opt/python3.12/bin:$HOME/.bin:$HOME/.win-bin:$HOME/.cron:$HOME/.ssh/bin:/usr/local/bin:/usr/local/cuda/bin:/usr/bin:/bin:$HOME/.local/bin:$HOME/local/python/bin:$HOME/.bin/secrets:/snap/bin
+
+# Add all direct child directories under ~/.bin to PATH
+if [ -d "$HOME/.bin" ]; then
+    for dir in "$HOME"/.bin/*/; do
+        if [ -d "$dir" ]; then
+            PATH="$PATH:$dir"
+        fi
+    done
+fi
+
+PATH="$PATH:$HOME/.bin/git-tools/commands"
+
+if_host "crest" . "$HOME/.cargo/env"
+export PATH=$HOME/.cabal/bin:$PATH
+
+# # Add paths to sudoers
+# export EDITOR=gedit
+# sudo visudo
+
+# /etc/sudoers
+# Defaults    secure_path="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/home/ywatanabe/.bin:/home/ywatanabe/.cron"
+
+# $HOME/.venv/bin:
+
+if_host "ywata" export PATH=/opt/mu-1.12.6/bin:$PATH
+if_host "ywata" export PATH=$PATH:$HOME/.npm-global/bin
+if_host "nsurg" export PATH=$PATH:$HOME/.singularity/.bin
+if_host "spartan" export PATH=$PATH:/apps/common/bin
+
+# Python
+# export PYTHONPATH=$PYTHONPATH:$HOME/.py
+if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    _git_root=$(git rev-parse --show-toplevel)
+    # Prefer src/ layout (PEP 517), fallback to git root
+    if [[ -d "$_git_root/src" ]]; then
+        export PYTHONPATH="$_git_root/src:$PYTHONPATH:$HOME/.py"
+    else
+        export PYTHONPATH="$_git_root:$PYTHONPATH:$HOME/.py"
+    fi
+    unset _git_root
+else
+    export PYTHONPATH=$PYTHONPATH:$HOME/.py
+fi
+export PYTHONSTARTUP=$HOME/.pystartup
+export PYTHONUNBUFFERED=1
+
+# CUDA
+if [[ -d /usr/local/cuda && $PATH != *'/usr/local/cuda/bin'* ]]; then
+    export CUDA_HOME=/usr/local/cuda
+    export PATH=$CUDA_HOME/bin:$PATH
+    export LD_LIBRARY_PATH=$CUDA_HOME/lib64:$LD_LIBRARY_PATH
+fi
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/lib:$HOME/local/lib
+
+# Man
+export MANPATH=$HOME/usr/share/man:$MANPATH
+
+# PKG_CONFIG
+export PKG_CONFIG_PATH=$HOME/usr/lib/pkgconfig:$PKG_CONFIG_PATH
+
+# CPATH
+export CPATH=$HOME/usr/include:$CPATH
+
+# Screen
+export SCREENDIR=$HOME/.screen
+
+# GenAI
+export EMACS_GENAI_DIR="$HOME/.emacs.d/lisp/genai/"
+
+# Remove duplicates
+cleanup_path PATH >/dev/null 2>&1
+cleanup_path CUDA_HOME >/dev/null 2>&1
+cleanup_path LD_LIBRARY_PATH >/dev/null 2>&1
+cleanup_path PYTHONPATH >/dev/null 2>&1
+cleanup_path MANPATH >/dev/null 2>&1
+cleanup_path PKG_CONFIG_PATH >/dev/null 2>&1
+cleanup_path CPATH >/dev/null 2>&1
+
+# EOF

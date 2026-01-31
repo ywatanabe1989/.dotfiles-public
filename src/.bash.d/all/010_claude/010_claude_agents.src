@@ -1,0 +1,295 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2025-12-21 02:42:36 (ywatanabe)"
+# File: /home/ywatanabe/.dotfiles/.bash.d/all/010_claude/010_claude_agents.src
+
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# ---------------------------------------
+# Description: Agent management for Claude Code
+
+AGENTS_DIR="$HOME/.claude/agents"
+AGENTS_SRC_DIR="$HOME/.claude/to_claude/agents"
+
+# ------------------------------------------------------------------------------
+# Text cleaning functions (use centralized from 010_claude_clean_markdown.src)
+# ------------------------------------------------------------------------------
+
+# Backward compatibility aliases to centralized functions
+_cld_delete_html_tags() { _cld_md_delete_html_tags "$@"; }
+_cld_delete_leading_whitespaces() { _cld_md_delete_leading_whitespaces "$@"; }
+_cld_delete_trailing_whitespaces() { _cld_md_delete_trailing_whitespaces "$@"; }
+_cld_clean_file() { _cld_md_clean_file "$@"; }
+
+# ------------------------------------------------------------------------------
+# Model variant creation
+# ------------------------------------------------------------------------------
+
+_cld_create_model_variants() {
+    local tgt_dir="$1"
+    local models=("haiku" "sonnet" "opus")
+    local model_suffixes=("HAIKU" "SONNET" "OPUS")
+
+    # Convert to absolute path
+    tgt_dir="$(cd "$tgt_dir" 2>/dev/null && pwd)" || {
+        echo_error "Directory not found: $1"
+        return 1
+    }
+
+    echo_info "Creating model variants in $tgt_dir"
+
+    # Ensure all files are writable
+    chmod -R u+w "$tgt_dir" 2>/dev/null
+
+    # Get list of base files (not variants) using for loop instead of process substitution
+    local base_files=()
+    for file in "$tgt_dir"/*.md; do
+        [[ ! -f "$file" ]] && continue
+        local fname=$(basename "$file")
+        # Skip variants and old files
+        [[ "$fname" == *-HAIKU.md ]] && continue
+        [[ "$fname" == *-SONNET.md ]] && continue
+        [[ "$fname" == *-OPUS.md ]] && continue
+        base_files+=("$file")
+    done
+
+    echo_info "Found ${#base_files[@]} base agent(s)"
+
+    for base_file in "${base_files[@]}"; do
+        local base_name=$(basename "$base_file" .md)
+        local dir_name=$(dirname "$base_file")
+
+        echo_info "  Processing: $base_name"
+
+        for ii_ in 0 1 2; do
+            local model="${models[$ii_]}"
+            local suffix="${model_suffixes[$ii_]}"
+            local variant_file="$dir_name/${base_name}-${suffix}.md"
+
+            # Create variant with updated name/model
+            sed -e "s/^model: .*/model: ${model}/" \
+                -e "s/^name: .*/name: ${base_name}-${suffix}/" "$base_file" > "$variant_file"
+
+            # Clean the variant file (remove HTML headers, whitespace)
+            _cld_clean_file "$variant_file"
+
+            # echo_success "    Created: ${base_name}-${suffix}"
+        done
+
+        # Remove base file after creating variants
+        rm -f "$base_file"
+    done
+}
+
+# ------------------------------------------------------------------------------
+# Agent sync
+# ------------------------------------------------------------------------------
+
+_cld_sync_agents_dir() {
+    local project_root=$1
+    local central_src="$HOME/.claude/to_claude/agents"
+    local project_tgt="$project_root/.claude/agents"
+
+    echo_info "Syncing agents (central overrides project)"
+    _cld_merge_config_dir "$central_src" "$project_tgt"
+
+    _cld_manage_permissions "$project_tgt" unprotect
+    _cld_create_model_variants "$project_tgt"
+    # Note: HTML headers are stripped during variant creation in _cld_create_model_variants
+
+    # Mark all agent variants from central as read-only
+    for rel_file in $(find "$central_src" -name "*.md" -printf "%f\n" 2>/dev/null); do
+        local base_name="${rel_file%.md}"
+        for suffix in HAIKU SONNET OPUS; do
+            local variant="$project_tgt/${base_name}-${suffix}.md"
+            [[ -f "$variant" ]] && chmod 444 "$variant"
+        done
+    done
+}
+
+# Backward compatibility alias
+_cld_symlink_to_agents_dir() { _cld_sync_agents_dir "$@"; }
+
+# ------------------------------------------------------------------------------
+# Agent management commands
+# ------------------------------------------------------------------------------
+
+_cld_agents_list() {
+    if [[ ! -d "$AGENTS_DIR" ]]; then
+        echo_info "No agents directory found at: $AGENTS_DIR"
+        return 0
+    fi
+
+    echo_info "Installed agents:"
+    for agent in "$AGENTS_DIR"/*.md; do
+        [[ -f "$agent" ]] || continue
+        local agent_name=$(basename "$agent" .md)
+        local name=$(grep -m 1 "^name:" "$agent" 2>/dev/null | sed 's/name: *//')
+        local description=$(grep -m 1 "^description:" "$agent" 2>/dev/null | sed 's/description: *//')
+        if [[ -n "$name" ]]; then
+            echo_success "  $name"
+            [[ -n "$description" ]] && echo "    $description"
+        else
+            echo_warning "  $agent_name (missing frontmatter)"
+        fi
+    done
+}
+
+_cld_agents_info() {
+    local agent_name=$1
+
+    if [[ -z "$agent_name" ]]; then
+        echo_error "Usage: clda-info <agent-name>"
+        return 1
+    fi
+
+    local agent_path="$AGENTS_DIR/${agent_name}.md"
+
+    if [[ ! -f "$agent_path" ]]; then
+        echo_error "Agent not found: $agent_name"
+        return 1
+    fi
+
+    echo_info "Agent: $agent_name"
+    echo_info "Path: $agent_path"
+    echo_info ""
+    head -30 "$agent_path"
+}
+
+_cld_agents_validate() {
+    if [[ ! -d "$AGENTS_DIR" ]]; then
+        echo_error "No agents directory found at: $AGENTS_DIR"
+        return 1
+    fi
+
+    local errors=0
+    echo_info "Validating agents..."
+
+    for agent in "$AGENTS_DIR"/*.md; do
+        [[ -f "$agent" ]] || continue
+        local agent_name=$(basename "$agent")
+        local first_line=$(head -1 "$agent")
+
+        # Check if file starts with YAML frontmatter
+        if [[ "$first_line" != "---" ]]; then
+            echo_error "  $agent_name: Does not start with YAML frontmatter (---)"
+            ((errors++))
+            continue
+        fi
+
+        # Check for required name field
+        if ! grep -q "^name:" "$agent"; then
+            echo_error "  $agent_name: Missing 'name' field"
+            ((errors++))
+        else
+            echo_success "  $agent_name: OK"
+        fi
+    done
+
+    if [[ $errors -eq 0 ]]; then
+        echo_success "All agents validated successfully"
+        return 0
+    else
+        echo_error "Found $errors agent(s) with issues"
+        return 1
+    fi
+}
+
+_cld_agents_fix_dir() {
+    local dir=$1
+    local dry_run=$2
+    local fixed=0
+
+    [[ ! -d "$dir" ]] && return 0
+
+    for agent in "$dir"/*.md; do
+        [[ -f "$agent" ]] || continue
+        local agent_name=$(basename "$agent")
+        local first_line=$(head -1 "$agent")
+
+        # Skip if already starts with ---
+        if [[ "$first_line" == "---" ]]; then
+            echo_success "  $agent_name: Already valid"
+            continue
+        fi
+
+        # Check if file has HTML comment header followed by YAML frontmatter
+        if grep -q "^<!-- " "$agent" && grep -q "^---$" "$agent"; then
+            # Find line number of first standalone ---
+            local yaml_start=$(grep -n "^---$" "$agent" | head -1 | cut -d: -f1)
+
+            if [[ -n "$yaml_start" ]]; then
+                echo_info "  $agent_name: Removing HTML header (lines 1-$((yaml_start-1)))"
+
+                if [[ $dry_run -eq 0 ]]; then
+                    # Make writable, fix, restore permissions
+                    chmod 644 "$agent" 2>/dev/null
+                    local tmp_file=$(mktemp)
+                    tail -n +$yaml_start "$agent" > "$tmp_file"
+                    mv "$tmp_file" "$agent"
+                    ((fixed++))
+                fi
+            fi
+        else
+            echo_warning "  $agent_name: Unknown format, skipping"
+        fi
+    done
+
+    echo "$fixed"
+}
+
+_cld_agents_fix() {
+    local dry_run=0
+    [[ "$1" == "--dry-run" ]] && dry_run=1
+
+    echo_info "Fixing agent frontmatter..."
+    [[ $dry_run -eq 1 ]] && echo_warning "DRY RUN - no changes will be made"
+
+    local total_fixed=0
+
+    # Fix source directory (to_claude/agents)
+    if [[ -d "$AGENTS_SRC_DIR" ]]; then
+        echo_info "Source directory: $AGENTS_SRC_DIR"
+        local fixed=$(_cld_agents_fix_dir "$AGENTS_SRC_DIR" "$dry_run")
+        ((total_fixed += fixed))
+    fi
+
+    # Fix runtime directory (.claude/agents)
+    if [[ -d "$AGENTS_DIR" ]]; then
+        echo_info "Runtime directory: $AGENTS_DIR"
+        local fixed=$(_cld_agents_fix_dir "$AGENTS_DIR" "$dry_run")
+        ((total_fixed += fixed))
+    fi
+
+    if [[ $dry_run -eq 0 ]]; then
+        echo_success "Fixed $total_fixed agent(s)"
+    fi
+}
+
+_cld_agents_fix_all() {
+    echo_info "This will fix all agent files in:"
+    echo_info "  - $AGENTS_SRC_DIR"
+    echo_info "  - $AGENTS_DIR"
+    echo_info "HTML comment headers will be removed to fix YAML frontmatter parsing"
+    echo_info ""
+
+    # Show dry run first
+    _cld_agents_fix --dry-run
+    echo_info ""
+
+    read -p "Proceed with fix? [y/N] " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        _cld_agents_fix
+    else
+        echo_info "Aborted"
+    fi
+}
+
+# Aliases
+alias clda-ls="_cld_agents_list"
+alias clda-info="_cld_agents_info"
+alias clda-validate="_cld_agents_validate"
+alias clda-fix="_cld_agents_fix_all"
+alias clda-fix-dry="_cld_agents_fix --dry-run"
+
+# EOF

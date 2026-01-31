@@ -1,0 +1,156 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2025-03-08 12:22:45 (ywatanabe)"
+# File: /home/ywatanabe/.dotfiles/.bash.d/all/010_apptainer/apptainer-utils/src/007_exec_sandbox_global.at.src
+
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+
+################################################################################
+# Global Sandbox Execution Operations
+################################################################################
+function _apptainer_exec_sandbox_global() {
+    BIN=$1
+    shift
+    echo_eval "apptainer exec \
+    $APPTAINER_RUNTIME_OPTIONS \
+    $APPTAINER_SANDBOX_IMAGE_GLOBAL_PATH \
+    $BIN $@"
+}
+
+function apptainer_python_sandbox_global() {
+    [[ "$1" == "-h" ]] && _apptainer_python_sandbox_global_help && return
+    _apptainer_exec_sandbox_global python "$@"
+}
+
+function apptainer_ipython_sandbox_global() {
+    [[ "$1" == "-h" ]] && _apptainer_ipython_sandbox_global_help && return
+    _apptainer_exec_sandbox_global ipython
+}
+
+function apptainer_jupyter_sandbox_global() {
+    [[ "$1" == "-h" ]] && _apptainer_jupyter_sandbox_global_help && return
+    _apptainer_exec_sandbox_global jupyter-notebook
+}
+
+# Help functions
+function _apptainer_shell_sandbox_global_help() {
+    cat << 'EOF'
+Usage: ashell_sg [-h]
+Shell into global sandbox container
+EOF
+}
+
+function _apptainer_shell_sandbox_global_writable_help() {
+    cat << 'EOF'
+Usage: ashell_sgw [-h]
+Shell into writable global sandbox container
+EOF
+}
+
+function _apptainer_python_sandbox_global_help() {
+    cat << 'EOF'
+Usage: apy_sg [-h] [script.py] [args...]
+Run Python in global sandbox container
+EOF
+}
+
+function _apptainer_ipython_sandbox_global_help() {
+    cat << 'EOF'
+Usage: aipy_sg [-h]
+Start IPython in global sandbox container
+EOF
+}
+
+function _apptainer_jupyter_sandbox_global_help() {
+    cat << 'EOF'
+Usage: ajpy_sg [-h] [notebook.ipynb]
+Launch Jupyter notebook in global sandbox container
+EOF
+}
+
+# Aliases
+alias apy_sg='apptainer_python_sandbox_global'
+alias aipy_sg='apptainer_ipython_sandbox_global'
+alias ajpy_sg='apptainer_jupyter_sandbox_global'
+
+# #!/bin/bash
+# # Time-stamp: "2024-12-13 06:45:09 (ywatanabe)"
+# # File: ./.dotfiles/.bash.d/all/030_apptainer/apptainer-utils/src/009_sandbox_global.src
+
+# #### Working with sandbox containers, located as $HOME/.apptainer/sandbox in default
+# apptainer_shell_sandbox_global() {
+#     if [[ "$1" == "-h" ]]; then
+#         echo "Usage: ashellsandglobal [-h]"
+#         echo "Shell into global sandbox container"
+#         return 0
+#     fi
+#     echo_eval "apptainer shell \
+#     --fakeroot \
+#     --cleanenv \
+#     --writable \
+#     $APPTAINER_SANDBOX_IMAGE_GLOBAL_PATH"
+# }
+
+# apptainer_shell_sandbox_writable_global() {
+#     if [[ "$1" == "-h" ]]; then
+#         echo "Usage: ashellsandglobal [-h]"
+#         echo "Shell into global sandbox container"
+#         return 0
+#     fi
+#     echo_eval "unset APPTAINER_BIND; \
+#     apptainer shell \
+#     --fakeroot \
+#     --cleanenv \
+#     --writable \
+#     $APPTAINER_SANDBOX_IMAGE_GLOBAL_PATH"
+# }
+
+# _apptainer_exec_sandbox_global () {
+#     BIN=$1
+#     shift
+#     echo_eval "apptainer exec \
+#     $APPTAINER_RUNTIME_OPTIONS \
+#     $APPTAINER_SANDBOX_IMAGE_GLOBAL_PATH \
+#     $BIN $@"
+# }
+
+# apptainer_py_sandbox_global () {
+#     if [[ "$1" == "-h" ]]; then
+#         echo "Usage: apysandglobal [-h] [script.py] [args...]"
+#         echo "Run Python in global sandbox container"
+#         return 0
+#     fi
+#     _apptainer_exec_sandbox_global python "$@"
+# }
+
+# apptainer_ipython_sandbox_global () {
+#     if [[ "$1" == "-h" ]]; then
+#         echo "Usage: aipysandglobal [-h]"
+#         echo "Start IPython in global sandbox container"
+#         return 0
+#     fi
+#     _apptainer_exec_sandbox_global ipython
+# }
+
+# apptainer_jupyter_notebook_sandbox_global () {
+#     if [[ "$1" == "-h" ]]; then
+#         echo "Usage: ajpysandglobal [-h] [notebook.ipynb]"
+#         echo "Launch Jupyter notebook in global sandbox container"
+#         return 0
+#     fi
+#     _apptainer_exec_sandbox_global jupyter-notebook
+# }
+
+# ################################################################################
+# # Aliases
+# ################################################################################
+# # Shell
+# alias ashell_sg=apptainer_shell_sandbox_global
+
+# # Python-related
+# alias apy_sg=apptainer_py_sandbox_global
+# alias aipy_sg=apptainer_ipython_sandbox_global
+# alias ajpy_sg=apptainer_jupyter_notebook_sandbox_global
+
+# EOF

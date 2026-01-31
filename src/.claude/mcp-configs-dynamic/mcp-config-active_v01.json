@@ -1,0 +1,61 @@
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "/home/ywatanabe/"
+      ]
+    },
+    "sequential-thinking": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"]
+    },
+    "emacs-server": {
+      "command": "/home/ywatanabe/.venv/bin/python",
+      "args": ["-m", "emacs_mcp_server"]
+    },
+    "emacs-tracker": {
+      "command": "/home/ywatanabe/.venv/bin/python",
+      "args": ["-m", "emacs_tracker.server"]
+    },
+    "scitex": {
+      "command": "/home/ywatanabe/.venv/bin/python",
+      "args": ["-m", "scitex.mcp_server"],
+      "env": {
+        "ELEVENLABS_API_KEY": "${ELEVENLABS_API_KEY}"
+      }
+    },
+    "crossref-local": {
+      "command": "crossref-local",
+      "args": ["run-server-mcp"]
+    },
+    "crossref-local-remote": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "http://localhost:8082/mcp"]
+    },
+    "sciwriter": {
+      "command": "/home/ywatanabe/proj/sciwriter/.venv/bin/sciwriter",
+      "args": ["mcp", "start"]
+    },
+    "figrecipe": {
+      "command": "/home/ywatanabe/proj/figrecipe/.venv/bin/figrecipe",
+      "args": ["mcp", "run"]
+    },
+    "playwright": {
+      "command": "npx",
+      "args": ["@playwright/mcp@latest"]
+    },
+    "pyposter": {
+      "command": "/home/ywatanabe/proj/pyposter/bin/pyposter-mcp-wrapper.sh",
+      "env": {
+        "PYPOSTER_ENV_PATH": "/home/ywatanabe/.bash.d/secrets/000_ENV_PYPOSTER.src"
+      }
+    },
+    "davinci-resolve": {
+      "command": "/home/ywatanabe/proj/davinci-resolve-mcp/resolve-mcp",
+      "timeout": 120000
+    }
+  }
+}

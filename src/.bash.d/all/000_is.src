@@ -1,0 +1,20 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2026-01-02 06:35:00 (ywatanabe)"
+# File: /home/ywatanabe/.dotfiles/.bash.d/all/000_is.src
+
+# Predicate functions for conditional blocks
+# Use with if statements for complex commands (pipes, chains, multi-line)
+#
+# Example:
+#   if is_host "mba"; then
+#       export PATH="/opt/homebrew/bin:$PATH"
+#       complex | pipe | chain
+#   fi
+
+is_host() { [[ "$(hostname)" == *"$1"* ]]; }
+is_user() { [[ "$USER" == *"$1"* ]]; }
+is_macos() { [[ "$(uname)" == "Darwin" ]]; }
+is_linux() { [[ "$(uname)" == "Linux" ]]; }
+
+# EOF

@@ -1,0 +1,127 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2025-03-06 12:57:51 (ywatanabe)"
+# File: /home/ywatanabe/.dotfiles/.bash.d/all/010_slurm/scancel.src
+
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+_expand_range() {
+    local arg="$1"
+    if [[ $arg =~ ^[0-9]+-[0-9]+$ ]]; then
+        local start="${arg%-*}"
+        local end="${arg#*-}"
+        seq $start $end
+    else
+        echo "$arg"
+    fi
+}
+
+scan() {
+    if [ $# -eq 0 ]; then
+        _list_jobs
+        return 0
+    fi
+
+    if [ "$1" = "-a" ] || [ "$1" = "--all" ]; then
+        echo "Cancelling jobs:"
+        printf '%s\n' "${jobinfo[@]}"
+        _list_jobs
+        read -p "Are you sure? (y/N): " confirm
+        if [[ $confirm =~ ^[Yy]$ ]]; then
+            command scancel -u $USER
+        else
+            echo "Cancelled."
+        fi
+        return 0
+    fi
+
+    local jobids=()
+    local jobinfo=()
+    for arg in "$@"; do
+        for expanded_arg in $(_expand_range "$arg"); do
+            local jobid=$(_get_jobid "$expanded_arg")
+            local jobname=$(_get_jobname "$expanded_arg")
+            if [ -z "$jobid" ]; then
+                echo "No job found at index $expanded_arg"
+                continue
+            fi
+            jobid=${jobid%_*}
+            if [[ ! " ${jobids[@]} " =~ " ${jobid} " ]]; then
+                jobids+=($jobid)
+                jobinfo+=("$jobid($jobname)")
+            fi
+        done
+    done
+
+    if [ ${#jobids[@]} -eq 0 ]; then
+        return 1
+    fi
+
+    echo "Cancelling all jobs:"
+    printf '%s\n' "${jobinfo[@]}"
+    read -p "Are you sure? (y/N): " confirm
+    if [[ $confirm =~ ^[Yy]$ ]]; then
+        command scancel "${jobids[@]}"
+    else
+        echo "Cancelled."
+    fi
+}
+
+
+# scan() {
+#     if [ $# -eq 0 ]; then
+#         _list_jobs
+#         return 0
+#     fi
+
+#     if [ "$1" = "-a" ] || [ "$1" = "--all" ]; then
+#         # echo "Cancelling all jobs: ${jobinfo[*]}..."
+#         echo "Cancelling jobs:"
+#         printf '%s\n' "${jobinfo[@]}"
+#         _list_jobs
+#         read -p "Are you sure? (y/N): " confirm
+#         if [[ $confirm =~ ^[Yy]$ ]]; then
+#             command scancel -u $USER
+#         else
+#             echo "Cancelled."
+#         fi
+#         return 0
+#     fi
+
+#     local jobids=()
+#     local jobinfo=()
+#     for arg in "$@"; do
+#         local jobid=$(_get_jobid "$arg")
+#         local jobname=$(_get_jobname "$arg")
+#         if [ -z "$jobid" ]; then
+#             echo "No job found at index $arg"
+#             continue
+#         fi
+#         # Handle array job IDs by removing the array part
+#         jobid=${jobid%_*}
+#         if [[ ! " ${jobids[@]} " =~ " ${jobid} " ]]; then
+#             jobids+=($jobid)
+#             jobinfo+=("$jobid($jobname)")
+#         fi
+#     done
+
+#     if [ ${#jobids[@]} -eq 0 ]; then
+#         return 1
+#     fi
+
+#     echo "Cancelling all jobs:"
+#     printf '%s\n' "${jobinfo[@]}"  # Changed this line
+#     # echo "Cancelling jobs: ${jobinfo[*]}..."
+#     read -p "Are you sure? (y/N): " confirm
+#     if [[ $confirm =~ ^[Yy]$ ]]; then
+#         command scancel "${jobids[@]}"
+#     else
+#         echo "Cancelled."
+#     fi
+# }
+
+for i in {1..128}; do
+    alias "scan$i=scan $i"
+done
+
+# EOF

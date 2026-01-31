@@ -1,0 +1,20 @@
+_decrypt_completion() {
+    local cur prev
+    COMPREPLY=()
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+
+    if [[ ${cur} == -* ]]; then
+        COMPREPLY=( $(compgen -W "-t -l -h" -- ${cur}) )
+        return 0
+    fi
+
+    local targets
+    if [[ -d "${HOME}/.pw" ]]; then
+        targets=$(find "${HOME}/.pw" -type f \( -name "*.gpg" -o -name "*.ssl" \) 2>/dev/null | xargs -r -n1 basename)
+        COMPREPLY=( $(compgen -W "${targets}" -- ${cur}) )
+    fi
+    return 0
+}
+
+complete -F _decrypt_completion decrypt.sh

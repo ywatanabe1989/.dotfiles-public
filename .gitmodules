@@ -1,0 +1,94 @@
+[submodule ".emacs.d/lisp/elinter"]
+	path = src/.emacs.d/lisp/elinter
+	url = git@github.com:ywatanabe1989/elinter.git
+	ignore = dirty
+[submodule ".emacs.d/lisp/elisp-test"]
+	path = src/.emacs.d/lisp/elisp-test
+	url = git@github.com:ywatanabe1989/elisp-test.git
+	ignore = dirty
+[submodule ".emacs.d/lisp/elisp-test-v01"]
+	path = src/.emacs.d/lisp/elisp-test-v01
+	url = git@github.com:ywatanabe1989/elisp-test.git
+	ignore = dirty
+[submodule ".emacs.d/lisp/emacs-buffer-navigation"]
+	path = src/.emacs.d/lisp/emacs-buffer-navigation
+	url = git@github.com:ywatanabe1989/emacs-buffer-navigation.git
+	ignore = dirty
+[submodule ".emacs.d/lisp/emacs-cheat"]
+	path = src/.emacs.d/lisp/emacs-cheat
+	url = git@github.com:ywatanabe1989/python-import-manager.git
+	ignore = dirty
+[submodule ".emacs.d/lisp/emacs-claude-code"]
+	path = src/.emacs.d/lisp/emacs-claude-code
+	url = git@github.com:ywatanabe1989/emacs-claude-code.git
+	ignore = dirty
+[submodule ".emacs.d/lisp/emacs-gif-screencast"]
+	path = src/.emacs.d/lisp/emacs-gif-screencast
+	url = git@github.com:ywatanabe1989/emacs-gif-screencast.git
+	ignore = dirty
+[submodule ".emacs.d/lisp/emacs-header-footer-manager"]
+	path = src/.emacs.d/lisp/emacs-header-footer-manager
+	url = git@github.com:ywatanabe1989/elisp-header-footer.git
+	ignore = dirty
+[submodule ".emacs.d/lisp/emacs-llm"]
+	path = src/.emacs.d/lisp/emacs-llm
+	url = git@github.com:ywatanabe1989/emacs-llm.git
+	ignore = dirty
+[submodule ".emacs.d/lisp/emacs-mcp-server"]
+	path = src/.emacs.d/lisp/emacs-mcp-server
+	url = git@github.com:ywatanabe1989/emacs-mcp-server.git
+	ignore = dirty
+[submodule ".emacs.d/lisp/emacs-message"]
+	path = src/.emacs.d/lisp/emacs-message
+	url = git@github.com:ywatanabe1989/emacs-message.git
+	ignore = dirty
+[submodule ".emacs.d/lisp/emacs-notification"]
+	path = src/.emacs.d/lisp/emacs-notification
+	url = git@github.com:ywatanabe1989/emacs-notification.git
+	ignore = dirty
+[submodule ".emacs.d/lisp/emacs-python-config"]
+	path = src/.emacs.d/lisp/emacs-python-config
+	url = git@github.com:ywatanabe1989/emacs-python-config.git
+	ignore = dirty
+[submodule ".emacs.d/lisp/emacsql"]
+	path = src/.emacs.d/lisp/emacsql
+	url = git@github.com:magit/emacsql.git
+	ignore = dirty
+[submodule ".emacs.d/lisp/emacs-recentf-project"]
+	path = src/.emacs.d/lisp/emacs-recentf-project
+	url = git@github.com:ywatanabe1989/emacs-recentf-project.git
+	ignore = dirty
+[submodule ".emacs.d/lisp/emacs-semantic-search"]
+	path = src/.emacs.d/lisp/emacs-semantic-search
+	url = git@github.com:ywatanabe1989/emacs-semantic-search.git
+	ignore = dirty
+[submodule ".emacs.d/lisp/emacs-slack"]
+	path = src/.emacs.d/lisp/emacs-slack
+	url = git@github.com:ywatanabe1989/emacs-slack.git
+	ignore = dirty
+[submodule ".emacs.d/lisp/emacs-spinner"]
+	path = src/.emacs.d/lisp/emacs-spinner
+	url = git@github.com:ywatanabe1989/emacs-spinner.git
+	ignore = dirty
+[submodule ".emacs.d/lisp/emacs-tab-manager"]
+	path = src/.emacs.d/lisp/emacs-tab-manager
+	url = git@github.com:ywatanabe1989/emacs-tab-manager.git
+	ignore = dirty
+[submodule ".emacs.d/lisp/genai"]
+	ignore = dirty
+[submodule ".emacs.d/lisp/gif-screenshot.el"]
+	path = src/.emacs.d/lisp/gif-screenshot.el
+	url = git@github.com:ywatanabe1989/gif-screenshot.el.git
+	ignore = dirty
+[submodule ".emacs.d/lisp/org-inline-anim.el"]
+	path = src/.emacs.d/lisp/org-inline-anim.el
+	url = https://github.com/shg/org-inline-anim.el.git
+	ignore = dirty
+[submodule ".emacs.d/lisp/python-import-manager"]
+	path = src/.emacs.d/lisp/python-import-manager
+	url = git@github.com:ywatanabe1989/python-import-manager.git
+	ignore = dirty
+[submodule ".emacs.d/lisp/whisper-live"]
+	path = src/.emacs.d/lisp/whisper-live
+	url = git@github.com:ywatanabe1989/emacs-whisper-live.git
+	ignore = dirty

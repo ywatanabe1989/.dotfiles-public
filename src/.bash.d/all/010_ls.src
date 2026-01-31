@@ -1,0 +1,122 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2025-05-13 18:56:09 (ywatanabe)"
+# File: /ssh:sp:/home/ywatanabe/.bash.d/all/010_ls.src
+
+# shellcheck disable=SC2034
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# ---------------------------------------
+
+# GNU ls (Linux) vs BSD ls (macOS)
+if is_linux; then
+    alias ls='ls --color=always --human-readable --classify'
+elif is_macos; then
+    # BSD ls: -G=color, -h=human-readable, -F=classify
+    alias ls='ls -GhF'
+fi
+
+#   -a, --all                  do not ignore entries starting with .
+#   -f                         do not sort, enable -aU, disable -ls --color
+#   -l                         use a long listing format
+#   -L, --dereference          when showing file information for a symbolic
+#   -r, --reverse              reverse order while sorting
+#   -s, --size                 print the allocated size of each file, in blocks
+#   -S                         sort by file size, largest first
+#       --sort=WORD            sort by WORD instead of name: none (-U), size (-S),
+#   -t                         sort by time, newest first; see --time
+#   -v                         natural sort of (version) numbers within text
+#   -x                         list entries by lines instead of by columns
+#   -X                         sort alphabetically by entry extension
+
+# Sorting by filename
+alias ll="ls -l"
+alias lll='lt -lL'
+
+# Sorting by timestamp
+alias l="ls -lt"
+alias lt="ls -lt"
+alias llt='ls -ltL'
+alias ltl='llt'
+
+ls_body() {
+    local options=()
+    local fpath=""
+
+    for arg in "$@"; do
+        if [ "${arg:0:1}" = "-" ]; then
+            options[${#options[@]}]="$arg"
+        elif [ -z "$fpath" ]; then
+            fpath="$arg"
+        fi
+    done
+
+    ls "${options[@]}" "$(readlink -f "$fpath")"
+}
+
+# LS_COLORS='di=36:fi=0:ln=31:pi=5:so=5:bd=5:cd=5:or=31:mi=0:ex=35:target=36'
+# export LS_COLORS
+
+# LS_COLORS='di=36:fi=0:ln=31:pi=5:so=5:bd=5:cd=5:or=31:mi=0:ex=35'
+# LS_COLORS='di=36:fi=0:ln=31:pi=5:so=5:bd=5:cd=5:or=31:mi=0:ex=35:tw=36:st=36'
+# export LS_COLORS
+
+# di=36 : Directories (cyan)
+# fi=0  : Regular files (default color)
+# ln=31 : Symbolic links (red)
+# pi=5  : Named pipes (blinking)
+# so=5  : Sockets (blinking)
+# bd=5  : Block devices (blinking)
+# cd=5  : Character devices (blinking)
+# or=31 : Orphaned symlinks (red)
+# mi=0  : Missing files (default color)
+# ex=35 : Executable files (magenta)
+
+# This sets directories (di) to cyan (36). Adjust the color code as needed:
+
+# 30: Black
+# 31: Red
+# 32: Green
+# 33: Yellow
+# 34: Blue
+# 35: Magenta
+# 36: Cyan
+# 37: White
+
+# # Standard ANSI color codes
+# LS_COLORS='no=00;38'
+# LS_COLORS+=':di=01;34'
+# # # To one of these softer alternatives:
+# # LS_COLORS+=':di=01;36'  # Bright cyan
+# # # or
+# # LS_COLORS+=':di=00;36'  # Normal cyan
+# # # or
+# # LS_COLORS+=':di=00;34'  # Normal blue
+
+# LS_COLORS+=':ln=01;36'
+# LS_COLORS+=':ex=01;32'
+
+# # File types
+# LS_COLORS+=':*.tar=01;31'
+# LS_COLORS+=':*.gz=01;31'
+# LS_COLORS+=':*.zip=01;31'
+
+# # Code files
+# LS_COLORS+=':*.py=00;32'
+# LS_COLORS+=':*.sh=00;32'
+# LS_COLORS+=':*.cpp=00;32'
+# LS_COLORS+=':*.h=00;32'
+
+# # Documentation
+# LS_COLORS+=':*.txt=01;37'
+# LS_COLORS+=':*.md=01;37'
+# LS_COLORS+=':*.pdf=01;37'
+
+# # Media
+# LS_COLORS+=':*.jpg=01;35'
+# LS_COLORS+=':*.png=01;35'
+# LS_COLORS+=':*.mp4=01;35'
+
+# export LS_COLORS=$LS_COLORS
+LS_COLORS='di=00;34:ln=00;36:ex=00;32:fi=00;37:*.py=00;33:*.md=00;35' && export LS_COLORS
+
+# EOF

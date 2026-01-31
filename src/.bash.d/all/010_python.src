@@ -1,0 +1,57 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2026-01-13 20:04:58 (ywatanabe)"
+# File: /home/ywatanabe/.dotfiles/.bash.d/all/010_python.src
+
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# ---------------------------------------
+
+alias ipy="ipython"
+alias iyp="ipython"
+alias act="source .venv/bin/activate"
+alias de="deactivate"
+
+
+alias 'ipython.exe'='powershell.exe ipython --no-autoindent'
+alias 'python.exe'='powershell.exe python'
+# export VIRTUAL_ENV_DISABLE_PROMPT=0
+unset VIRTUAL_ENV_DISABLE_PROMPT
+
+if [ -f $HOME/.bin/python_ps1_home ]; then
+    $HOME/.bin/python_ps1_home
+fi
+alias "upip"="upip"
+
+export CATBOOST_DISABLE_CUDA_LOGGING=1
+export CATBOOST_DISABLE_LOGGING=1
+
+export UV_LINK_MODE=copy
+
+## Cache
+mkdir -p ~/.cache/tmp ~/.cache/uv ~/.cache/pip
+export TMPDIR=~/.cache/tmp
+export UV_CACHE_DIR=~/.cache/uv
+export PIP_CACHE_DIR=~/.cache/pip
+export UV_HTTP_TIMEOUT=1800
+export UV_HTTP_RETRIES=20
+
+python_as_module() {
+    local script_path="$1"
+    shift
+    local remaining_args="$@"
+
+    if [[ ! -f "$script_path" ]]; then
+        echo "Error: Script not found: $script_path"
+        return 1
+    fi
+
+    local rel_path=$(realpath --relative-to="$(pwd)" "$script_path")
+    local module_path=$(echo "$rel_path" | sed 's|^src/||' | sed 's|\.py$||' | sed 's|/|.|g')
+
+    echo "Running: python -m $module_path $remaining_args"
+    python -m "$module_path" $remaining_args
+}
+
+alias pym='python_as_module'
+
+# EOF

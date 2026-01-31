@@ -1,0 +1,149 @@
+[org/gnome/settings-daemon/plugins/color]
+night-light-last-coordinates=(35.665399999999998, 139.6977)
+
+[org/gnome/settings-daemon/plugins/media-keys]
+custom-keybindings=['/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom0/', '/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom1/']
+
+[org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom1]
+binding='<Primary><Alt>s'
+command='gnome-control-center'
+name='gnome-control-center'
+
+[org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom0]
+binding='<Primary><Alt>t'
+command='gnome-terminal'
+name='gnome-terminal'
+
+[org/gnome/shell]
+had-bluetooth-devices-setup=true
+
+[org/gnome/nautilus/preferences]
+search-filter-time-type='last_modified'
+
+[org/gnome/system/location]
+enabled=true
+
+[org/gnome/evolution-data-server]
+network-monitor-gio-name=''
+migrated=true
+
+[org/gnome/desktop/app-folders]
+folder-children=['Utilities', 'Sundry', 'YaST']
+
+[org/gnome/desktop/app-folders/folders/Utilities]
+translate=true
+categories=['X-GNOME-Utilities']
+apps=['org.gnome.baobab.desktop', 'deja-dup-preferences.desktop', 'eog.desktop', 'evince.desktop', 'org.gnome.FileRoller.desktop', 'gnome-calculator.desktop', 'gnome-dictionary.desktop', 'org.gnome.Characters.desktop', 'org.gnome.DiskUtility.desktop', 'org.gnome.font-viewer.desktop', 'org.gnome.Terminal.desktop', 'org.gnome.Screenshot.desktop', 'gnome-system-log.desktop', 'gnome-system-monitor.desktop', 'gnome-tweak-tool.desktop', 'gucharmap.desktop', 'seahorse.desktop', 'vinagre.desktop', 'yelp.desktop']
+name='X-GNOME-Utilities.directory'
+
+[org/gnome/desktop/app-folders/folders/Sundry]
+translate=true
+categories=['X-GNOME-Sundry']
+apps=['alacarte.desktop', 'authconfig.desktop', 'ca.desrt.dconf-editor.desktop', 'fedora-release-notes.desktop', 'firewall-config.desktop', 'flash-player-properties.desktop', 'gconf-editor.desktop', 'gnome-abrt.desktop', 'gnome-power-statistics.desktop', 'ibus-setup-anthy.desktop', 'ibus-setup.desktop', 'ibus-setup-hangul.desktop', 'ibus-setup-libbopomofo.desktop', 'ibus-setup-libpinyin.desktop', 'ibus-setup-m17n.desktop', 'ibus-setup-typing-booster.desktop', 'im-chooser.desktop', 'itweb-settings.desktop', 'jhbuild.desktop', 'javaws.desktop', 'java-1.7.0-openjdk-jconsole.desktop', 'java-1.7.0-openjdk-policytool.desktop', 'log4j-chainsaw.desktop', 'log4j-logfactor5.desktop', 'nm-connection-editor.desktop', 'orca.desktop', 'setroubleshoot.desktop', 'system-config-date.desktop', 'system-config-firewall.desktop', 'system-config-keyboard.desktop', 'system-config-language.desktop', 'system-config-printer.desktop', 'system-config-users.desktop', 'vino-preferences.desktop']
+name='X-GNOME-Sundry.directory'
+
+[org/gnome/desktop/app-folders/folders/YaST]
+translate=true
+categories=['X-SuSE-YaST']
+name='suse-yast.directory'
+
+[org/gnome/desktop/notifications]
+application-children=['org-gnome-software', 'org-gnome-terminal', 'gnome-control-center', 'emacs', 'abrt-applet']
+
+[org/gnome/desktop/notifications/application/org-gnome-terminal]
+application-id='org.gnome.Terminal.desktop'
+
+[org/gnome/desktop/notifications/application/emacs]
+application-id='emacs.desktop'
+
+[org/gnome/desktop/notifications/application/org-gnome-software]
+application-id='org.gnome.Software.desktop'
+
+[org/gnome/desktop/notifications/application/abrt-applet]
+application-id='abrt-applet.desktop'
+
+[org/gnome/desktop/notifications/application/gnome-control-center]
+application-id='gnome-control-center.desktop'
+
+[org/gnome/desktop/privacy]
+report-technical-problems=true
+
+[org/gnome/desktop/interface]
+gtk-im-module='ibus'
+
+[org/gnome/desktop/input-sources]
+xkb-options=@as []
+current=uint32 0
+mru-sources=[('xkb', 'us'), ('ibus', 'kkc')]
+sources=[('xkb', 'us'), ('ibus', 'kkc')]
+
+[org/gnome/desktop/wm/keybindings]
+activate-window-menu=@as []
+switch-input-source-backward=['<Alt>space']
+switch-input-source=['<Shift><Alt>space']
+
+[org/gnome/control-center]
+last-panel='keyboard'
+
+[org/gnome/login-screen]
+enable-smartcard-authentication=false
+
+[org/gnome/terminal/legacy/profiles:/:2964dbcc-d669-4f79-b9b6-6ae41ed29022]
+foreground-color='#dcdcdcdccccc'
+visible-name='fdashj'
+palette=['#4d4d4d4d4d4d', '#707050505050', '#6060b4b48a8a', '#f0f0dfdfafaf', '#505060607070', '#dcdc8c8cc3c3', '#8c8cd0d0d3d3', '#dcdcdcdccccc', '#707090908080', '#dcdca3a3a3a3', '#c3c3bfbf9f9f', '#e0e0cfcf9f9f', '#9494bfbff3f3', '#ecec9393d3d3', '#9393e0e0e3e3', '#ffffffffffff']
+highlight-colors-set=true
+use-theme-colors=false
+use-theme-transparency=false
+allow-bold=true
+use-theme-background=false
+bold-color-same-as-fg=true
+bold-color='#dcdcdcdccccc'
+background-color='#3f3f3f3f3f3f'
+highlight-background-color='#'
+highlight-foreground-color='#'
+
+[org/gnome/terminal/legacy/profiles:/:4fb9ec23-a8e6-4e88-8626-5d9cea67f252]
+foreground-color='#dcdcdcdccccc'
+visible-name='Zenburn'
+palette=['#4d4d4d4d4d4d', '#707050505050', '#6060b4b48a8a', '#f0f0dfdfafaf', '#505060607070', '#dcdc8c8cc3c3', '#8c8cd0d0d3d3', '#dcdcdcdccccc', '#707090908080', '#dcdca3a3a3a3', '#c3c3bfbf9f9f', '#e0e0cfcf9f9f', '#9494bfbff3f3', '#ecec9393d3d3', '#9393e0e0e3e3', '#ffffffffffff']
+highlight-colors-set=true
+use-theme-colors=false
+use-theme-transparency=false
+allow-bold=true
+use-theme-background=false
+bold-color-same-as-fg=true
+bold-color='#dcdcdcdccccc'
+background-color='#3f3f3f3f3f3f'
+highlight-background-color='#'
+highlight-foreground-color='#'
+
+[org/gnome/terminal/legacy/profiles:/:b1dcc9dd-5262-4d8d-a863-c897e6d979b9]
+background-color='rgb(0,0,0)'
+use-theme-colors=false
+foreground-color='rgb(255,255,255)'
+
+[org/gnome/terminal/legacy/profiles:]
+list=['2964dbcc-d669-4f79-b9b6-6ae41ed29022', '4fb9ec23-a8e6-4e88-8626-5d9cea67f252']
+
+[org/gnome/terminal/legacy]
+schema-version=uint32 3
+
+[org/gnome/software]
+check-timestamp=int64 1602712720
+install-timestamp=int64 1568246000
+
+[org/gtk/settings/file-chooser]
+sort-column='name'
+sidebar-width=163
+window-position=(2265, 1141)
+show-size-column=true
+show-hidden=false
+window-size=(1231, 902)
+sort-directories-first=false
+date-format='regular'
+sort-order='ascending'
+location-mode='path-bar'
+
+[desktop/ibus/general/hotkey]
+triggers=['<Alt>space']

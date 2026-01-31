@@ -1,0 +1,14 @@
+# -*- coding: utf-8 -*-
+# Config for upload-public.sh
+# Permissions should be 600 (owner read/write only)
+
+# GitHub settings
+GITHUB_OWNER="ywatanabe1989"
+PUBLIC_REPO="dotfiles-public"
+
+# Source directory (your private dotfiles)
+# Leave empty to auto-detect from script location
+DOTFILES_DIR=""
+
+# Set to "true" to keep staging directory after dry-run for inspection
+KEEP_STAGING_ON_DRY_RUN="true"

@@ -1,0 +1,162 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2025-05-12 12:48:23 (ywatanabe)"
+# File: /home/ywatanabe/.bash.d/all/010_slack.src
+
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# ---------------------------------------
+
+# Send message
+slack_send_message() {
+    local channel="$1"
+    local text="$2"
+    curl -X POST "https://slack.com/api/chat.postMessage" \
+         -H "Authorization: Bearer $SLACK_TOKEN" \
+         -H "Content-Type: application/json" \
+         -d "{\"channel\":\"$channel\",\"text\":\"$text\"}"
+}
+
+# Upload file
+slack_upload_file() {
+    local channel="$1"
+    local filepath="$2"
+    local title="${3:-$(basename $filepath)}"
+    local comment="$4"
+
+    response=$(curl -X POST "https://slack.com/api/files.getUploadURLExternal" \
+                    -H "Authorization: Bearer $SLACK_TOKEN" \
+                    -H "Content-Type: application/x-www-form-urlencoded" \
+                    -d "filename=$(basename $filepath)&length=$(stat -f %z $filepath)")
+
+    upload_url=$(echo $response | jq -r '.upload_url')
+    file_id=$(echo $response | jq -r '.file_id')
+
+    curl -X POST "$upload_url" -F "file=@$filepath"
+
+    curl -X POST "https://slack.com/api/files.completeUploadExternal" \
+         -H "Authorization: Bearer $SLACK_TOKEN" \
+         -H "Content-Type: application/x-www-form-urlencoded" \
+         -d "files=[{\"id\":\"$file_id\",\"title\":\"$title\"}]&channels=$channel&initial_comment=$comment"
+}
+
+# Get channel history
+slack_get_channel_history() {
+    local channel="$1"
+    local limit="${2:-100}"
+    curl -X GET "https://slack.com/api/conversations.history" \
+         -H "Authorization: Bearer $SLACK_TOKEN" \
+         -H "Content-Type: application/json" \
+         -G --data-urlencode "channel=$channel" \
+         --data-urlencode "limit=$limit"
+}
+
+# Get all channels
+slack_get_channels() {
+    curl -X GET "https://slack.com/api/conversations.list" \
+         -H "Authorization: Bearer $SLACK_TOKEN" \
+         -H "Content-Type: application/json"
+}
+
+# Join channel
+slack_join_channel() {
+    local channel_id="$1"
+    curl -X POST "https://slack.com/api/conversations.join" \
+         -H "Authorization: Bearer $SLACK_TOKEN" \
+         -H "Content-Type: application/json" \
+         -d "{\"channel\":\"$channel_id\"}"
+}
+
+# Add reaction
+slack_add_reaction() {
+    local channel="$1"
+    local timestamp="$2"
+    local emoji="$3"
+    curl -X POST "https://slack.com/api/reactions.add" \
+         -H "Authorization: Bearer $SLACK_TOKEN" \
+         -H "Content-Type: application/json" \
+         -d "{\"channel\":\"$channel\",\"timestamp\":\"$timestamp\",\"name\":\"$emoji\"}"
+}
+
+
+# Reply in thread
+slack_reply_in_thread() {
+    local channel="$1"
+    local thread_ts="$2"
+    local text="$3"
+    curl -X POST "https://slack.com/api/chat.postMessage" \
+         -H "Authorization: Bearer $SLACK_TOKEN" \
+         -H "Content-Type: application/json" \
+         -d "{\"channel\":\"$channel\",\"thread_ts\":\"$thread_ts\",\"text\":\"$text\"}"
+}
+
+# Get thread replies
+slack_get_thread_replies() {
+    local channel="$1"
+    local thread_ts="$2"
+    curl -X GET "https://slack.com/api/conversations.replies" \
+         -H "Authorization: Bearer $SLACK_TOKEN" \
+         -H "Content-Type: application/json" \
+         -G --data-urlencode "channel=$channel" \
+         --data-urlencode "ts=$thread_ts"
+}
+
+# Get users list
+slack_get_users() {
+    curl -X GET "https://slack.com/api/users.list" \
+         -H "Authorization: Bearer $SLACK_TOKEN" \
+         -H "Content-Type: application/json"
+}
+
+# Get user info
+slack_get_user_info() {
+    local user_id="$1"
+    curl -X GET "https://slack.com/api/users.info" \
+         -H "Authorization: Bearer $SLACK_TOKEN" \
+         -H "Content-Type: application/json" \
+         -G --data-urlencode "user=$user_id"
+}
+
+
+# Update message
+slack_update_message() {
+    local channel="$1"
+    local ts="$2"
+    local text="$3"
+    curl -X POST "https://slack.com/api/chat.update" \
+         -H "Authorization: Bearer $SLACK_TOKEN" \
+         -H "Content-Type: application/json" \
+         -d "{\"channel\":\"$channel\",\"ts\":\"$ts\",\"text\":\"$text\"}"
+}
+
+# Delete message
+slack_delete_message() {
+    local channel="$1"
+    local ts="$2"
+    curl -X POST "https://slack.com/api/chat.delete" \
+         -H "Authorization: Bearer $SLACK_TOKEN" \
+         -H "Content-Type: application/json" \
+         -d "{\"channel\":\"$channel\",\"ts\":\"$ts\"}"
+}
+
+# Search messages
+slack_search_messages() {
+    local query="$1"
+    local count="${2:-20}"
+    curl -X GET "https://slack.com/api/search.messages" \
+         -H "Authorization: Bearer $SLACK_TOKEN" \
+         -H "Content-Type: application/json" \
+         -G --data-urlencode "query=$query" \
+         --data-urlencode "count=$count"
+}
+
+# Pin message
+slack_pin_message() {
+    local channel="$1"
+    local timestamp="$2"
+    curl -X POST "https://slack.com/api/pins.add" \
+         -H "Authorization: Bearer $SLACK_TOKEN" \
+         -H "Content-Type: application/json" \
+         -d "{\"channel\":\"$channel\",\"timestamp\":\"$timestamp\"}"
+}
+
+# EOF

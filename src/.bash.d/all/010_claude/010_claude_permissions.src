@@ -1,0 +1,35 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2025-12-04 (ywatanabe)"
+# File: /home/ywatanabe/.dotfiles/.bash.d/all/010_claude/010_claude_permissions.src
+# Description: Permission management utilities for Claude Code
+
+_cld_manage_permissions() {
+    local dir=$1 action=$2
+    echo_info "Managing permissions: $action"
+    # Note: Job control (set +m) is managed by caller
+    case $action in
+    unprotect)
+        find "$dir" -type d -not -path "*.old*" -exec chmod 755 {} \; 2>/dev/null &
+        find "$dir" -type f -not -path "*.old*" -exec chmod 755 {} \; 2>/dev/null &
+        wait
+        ;;
+    protect)
+        find "$dir" -type d -exec chmod 777 {} \; 2>/dev/null &
+        find "$dir" -type f -not -path "*.old*" -not -name "*.sh" -exec chmod 444 {} \; 2>/dev/null &
+        find "$dir" -type f -not -path "*.old*" -name "*.sh" -exec chmod 544 {} \; 2>/dev/null &
+        wait
+        ;;
+    esac
+}
+
+_cld_cleanup_old_files() {
+    local tgt_dir=$1
+    echo_info "Cleaning old files"
+    # Note: Job control (set +m) is managed by caller
+    find "$tgt_dir" -type d -path "*.old*" -exec sh -c 'chmod 777 "$1" && rm -rf "$1"' sh {} \; 2>/dev/null &
+    find "$tgt_dir" -type f -name "*.log" -exec sh -c 'chmod 777 "$1" && rm -f "$1"' sh {} \; 2>/dev/null &
+    wait
+}
+
+# EOF

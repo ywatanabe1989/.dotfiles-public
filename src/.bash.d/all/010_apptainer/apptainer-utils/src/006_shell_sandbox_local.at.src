@@ -1,0 +1,51 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2025-03-08 12:22:43 (ywatanabe)"
+# File: /home/ywatanabe/.dotfiles/.bash.d/all/010_apptainer/apptainer-utils/src/006_shell_sandbox_local.at.src
+
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+
+################################################################################
+# Local Sandbox Shell Operations
+################################################################################
+
+function apptainer_shell_sandbox_local() {
+    [[ "$1" == "-h" ]] && _apptainer_shell_sandbox_local_help && return
+    echo_eval "apptainer shell \
+    $APPTAINER_RUNTIME_OPTIONS \
+    $APPTAINER_SANDBOX_IMAGE_LOCAL_PATH \
+    "$@"
+    "
+}
+
+function apptainer_shell_sandbox_local_writable() {
+    [[ "$1" == "-h" ]] && _apptainer_shell_sandbox_local_writable_help && return
+    echo_eval "unset APPTAINER_BIND; \
+    apptainer shell \
+    --fakeroot \
+    --writable \
+    $APPTAINER_SANDBOX_IMAGE_LOCAL_PATH \
+    "$@"
+    "
+}
+
+function _apptainer_shell_sandbox_local_help() {
+    cat << 'EOF'
+Usage: ashell_s [-h]
+Shell into local sandbox container
+EOF
+}
+
+function _apptainer_shell_sandbox_local_writable_help() {
+    cat << 'EOF'
+Usage: ashell_sw [-h]
+Shell into writable local sandbox container
+EOF
+}
+
+# Aliases
+alias ashell_s='apptainer_shell_sandbox_local'
+alias ashell_sw='apptainer_shell_sandbox_local_writable'
+
+# EOF

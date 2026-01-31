@@ -1,0 +1,23 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2025-03-06 12:46:14 (ywatanabe)"
+# File: /home/ywatanabe/.dotfiles/.bash.d/all/030_git/git_diff.src
+
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+git_smart_diff() {
+    # Performs a smart diff based on the current git state
+    #
+    # Usage:
+    # git_smart_diff path/to/file
+
+    if git diff --quiet HEAD; then
+        git diff HEAD^ -- "$@"
+    else
+        git diff HEAD -- "$@"
+    fi
+}
+
+alias sdif='git_smart_diff'
+
+# EOF

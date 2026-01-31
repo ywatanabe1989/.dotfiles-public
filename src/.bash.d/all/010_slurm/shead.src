@@ -1,0 +1,224 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2025-03-06 12:58:08 (ywatanabe)"
+# File: /home/ywatanabe/.dotfiles/.bash.d/all/010_slurm/shead.src
+
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+
+shead() {
+    local usage="Usage: shead [job_index|range] [-d directory] [-n n_head] [-a] [out|err]"
+    local directory="."
+    local jobid=""
+    local type="out"
+    local n_head="10"
+    local all_jobs=false
+    local range_mode=false
+    local start=""
+    local end=""
+
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            -h|--help)
+                echo "$usage"
+                return 0
+                ;;
+            -a)
+                all_jobs=true
+                shift
+                ;;
+            -d)
+                directory="$2"
+                shift 2
+                ;;
+            -n)
+                n_head="$2"
+                shift 2
+                ;;
+            out|err)
+                type="$1"
+                shift
+                ;;
+            *)
+                if [[ "$1" =~ ^[0-9]+-[0-9]+$ ]]; then
+                    range_mode=true
+                    start=${1%-*}
+                    end=${1#*-}
+                elif [[ "$1" =~ ^[0-9]+$ ]]; then
+                    jobid=$(_get_jobid "$1")
+                    if [ -z "$jobid" ]; then
+                        echo "Error: No job found at index $1" >&2
+                        return 1
+                    fi
+                    shift
+                else
+                    echo "Invalid argument: $1" >&2
+                    return 1
+                fi
+                ;;
+        esac
+    done
+
+    if [ "$range_mode" = true ]; then
+        for i in $(seq $start $end); do
+            local current_jobid=$(_get_jobid "$i")
+            if [ -n "$current_jobid" ]; then
+                local log_file="slurm-${current_jobid}.${type}"
+                if [ -f "$log_file" ]; then
+                    echo "==> $log_file <=="
+                    head -n "$n_head" "$log_file"
+                    echo
+                fi
+            fi
+        done
+        return 0
+    fi
+
+    if [ "$all_jobs" = true ]; then
+        for job in $(squeue -h -u $USER -o "%i"); do
+            local log_file="slurm-${job}.${type}"
+            if [ -f "$log_file" ]; then
+                echo "==> $log_file <=="
+                head -n "$n_head" "$log_file"
+                echo
+            fi
+        done
+        return 0
+    fi
+
+    if [ -z "$jobid" ]; then
+        _list_jobs
+        return 0
+    fi
+
+    local log_file="slurm-${jobid}.${type}"
+
+    if [ -f "$log_file" ]; then
+        echo "Found slurm log file: $log_file"
+        head -n "$n_head" "$log_file"
+        printf $NC
+        return 0
+    fi
+
+    echo "Error: No ${type} files found for job ${jobid}" >&2
+    return 1
+}
+
+# shead() {
+#     local usage="Usage: shead [job_index] [-d directory] [-n n_head] [out|err]"
+#     local directory="."
+#     local jobid=""
+#     local type="out"
+#     local n_head="10"
+
+#     while [ $# -gt 0 ]; do
+#         case "$1" in
+#             -h|--help)
+#                 echo "$usage"
+#                 return 0
+#                 ;;
+#             -d)
+#                 directory="$2"
+#                 shift 2
+#                 ;;
+#             -n)
+#                 n_head="$2"
+#                 shift 2
+#                 ;;
+#             out|err)
+#                 type="$1"
+#                 shift
+#                 ;;
+#             *)
+#                 if [[ "$1" =~ ^[0-9]+$ ]]; then
+#                     jobid=$(_get_jobid "$1")
+#                     if [ -z "$jobid" ]; then
+#                         echo "Error: No job found at index $1" >&2
+#                         return 1
+#                     fi
+#                 fi
+#                 shift
+#                 ;;
+#         esac
+#     done
+
+#     if [ -z "$jobid" ]; then
+#         _list_jobs
+#         return 0
+#     fi
+
+#     local log_file="slurm-${jobid}.${type}"
+
+#     if [ -f "$log_file" ]; then
+#         echo "Found slurm log file: $log_file"
+#         head "$log_file" -n "$n_head"
+#         printf $NC
+#         return 0
+#     fi
+
+#     echo "Error: No ${type} files found for job ${jobid}" >&2
+#     return 1
+# }
+
+
+
+# shead() {
+#     local usage="Usage: shead [job_index] [-d directory] [-n n_head] [out|err]"
+#     local directory="."
+#     local jobid=""
+#     local type="out"
+#     local n_head="10"
+
+#     while [ $# -gt 0 ]; do
+#         case "$1" in
+#             -h|--help)
+#                 echo "$usage"
+#                 return 0
+#                 ;;
+#             -d)
+#                 directory="$2"
+#                 shift 2
+#                 ;;
+#             -n)
+#                 n_head="$2"
+#                 shift 2
+#                 ;;
+#             out|err)
+#                 type="$1"
+#                 shift
+#                 ;;
+#             *)
+#                 if [[ "$1" =~ ^[0-9]+$ ]]; then
+#                     jobid=$(_get_jobid "$1")
+#                     if [ -z "$jobid" ]; then
+#                         echo "Error: No job found at index $1" >&2
+#                         return 1
+#                     fi
+#                 fi
+#                 shift
+#                 ;;
+#         esac
+#     done
+
+#     if [ -z "$jobid" ]; then
+#         _list_jobs
+#         return 0
+#     fi
+
+#     local log_file="slurm-${jobid}.${type}"
+
+#     if [ -f "$log_file" ]; then
+#         echo "Found slurm log file: $log_file"
+#         head "$log_file" -n "$n_head"
+#         printf $NC
+#         return 0
+#     fi
+
+#     echo "Error: No ${type} files found for job ${jobid}" >&2
+#     return 1
+# }
+
+
+# # EOF
+
+# EOF

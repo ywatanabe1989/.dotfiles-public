@@ -1,0 +1,185 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2025-12-24 19:05:27 (ywatanabe)"
+# File: /home/ywatanabe/.bash.d/all/010_find_large_files.src
+
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# ---------------------------------------
+
+# find_large_files() {
+#     find src -type f -name "*.py" -print0 | xargs -0 wc -l | sort -nr
+# }
+find_large_files() {
+    # Find large source files by line count (safe with spaces/newlines).
+    #
+    # Usage:
+    #   find_large_files [PATH] [THRESHOLD] [GLOB] [options]
+    #
+    # Defaults:
+    #   PATH=src, THRESHOLD=512, GLOB=*.py
+    #
+    # Options:
+    #   -a, --all                  Show all (ignore threshold)
+    #   -t, --top N                Show top N after sorting
+    #   -g, --git                  Use git-tracked files only (git ls-files)
+    #   -x, --exclude PATTERN       Exclude path glob (repeatable)
+    #       --no-default-excludes   Disable default excludes
+    #   -h, --help                 Show help
+    #
+    # Examples:
+    #   find_large_files
+    #   find_large_files src 800
+    #   find_large_files src 512 "*.py" --top 20
+    #   find_large_files --git --top 30
+    #   find_large_files src 300 --exclude "src/figrecipe/_dev/*"
+
+    local root="src"
+    local threshold="512"
+    local pattern="*.py"
+    local show_all=0
+    local use_git=0
+    local top_n=""
+    local no_default_excludes=0
+
+    local -a excludes_default=(
+        "*/.venv/*" "*/venv/*" "*/.mypy_cache/*" "*/.pytest_cache/*"
+        "*/__pycache__/*" "*/.git/*" "*/build/*" "*/dist/*" "*/.eggs/*"
+        "*/.tox/*" "*/.ruff_cache/*"
+    )
+    local -a excludes_user=()
+
+    _find_large_files_usage() {
+        cat <<'USAGE'
+Usage:
+  find_large_files [PATH] [THRESHOLD] [GLOB] [options]
+
+Defaults:
+  PATH=src, THRESHOLD=512, GLOB=*.py
+
+Options:
+  -a, --all                  Show all files (ignore threshold)
+  -t, --top N                Show only top N results
+  -g, --git                  Count only git-tracked files (git ls-files)
+  -x, --exclude PATTERN       Exclude paths matching PATTERN (repeatable)
+      --no-default-excludes   Disable default excludes
+  -h, --help                 Show this help
+
+Examples:
+  find_large_files
+  find_large_files src 800
+  find_large_files src 512 "*.py" --top 20
+  find_large_files --git --top 30
+  find_large_files src 300 --exclude "src/figrecipe/_dev/*"
+USAGE
+    }
+
+    # Positional args (only if they don't look like options)
+    if [[ $# -ge 1 && "$1" != -* ]]; then root="$1"; shift; fi
+    if [[ $# -ge 1 && "$1" != -* ]]; then threshold="$1"; shift; fi
+    if [[ $# -ge 1 && "$1" != -* ]]; then pattern="$1"; shift; fi
+
+    # Options
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            -a|--all) show_all=1; shift ;;
+            -g|--git) use_git=1; shift ;;
+            -t|--top)
+                shift
+                if [[ -z "${1:-}" || "$1" == -* ]]; then
+                    echo "ERROR: --top requires an integer." >&2
+                    return 2
+                fi
+                top_n="$1"
+                shift
+                ;;
+            -x|--exclude)
+                shift
+                if [[ -z "${1:-}" || "$1" == -* ]]; then
+                    echo "ERROR: --exclude requires a pattern." >&2
+                    return 2
+                fi
+                excludes_user+=("$1")
+                shift
+                ;;
+            --no-default-excludes) no_default_excludes=1; shift ;;
+            -h|--help) _find_large_files_usage; return 0 ;;
+            *)
+                echo "ERROR: Unknown option: $1" >&2
+                _find_large_files_usage >&2
+                return 2
+                ;;
+        esac
+    done
+
+    # Validate
+    if [[ ! -d "$root" ]]; then
+        echo "ERROR: PATH not found: $root" >&2
+        return 2
+    fi
+    if ! [[ "$threshold" =~ ^[0-9]+$ ]]; then
+        echo "ERROR: THRESHOLD must be an integer: $threshold" >&2
+        return 2
+    fi
+    if [[ -n "$top_n" && ! "$top_n" =~ ^[0-9]+$ ]]; then
+        echo "ERROR: --top must be an integer: $top_n" >&2
+        return 2
+    fi
+    if [[ "$use_git" -eq 1 ]]; then
+        command -v git >/dev/null 2>&1 || { echo "ERROR: git not found." >&2; return 127; }
+    fi
+
+    # Merge excludes
+    local -a excludes=()
+    if [[ "$no_default_excludes" -eq 0 ]]; then
+        excludes+=("${excludes_default[@]}")
+    fi
+    excludes+=("${excludes_user[@]}")
+
+    _is_excluded() {
+        local p="$1"
+        local pat
+        for pat in "${excludes[@]}"; do
+            [[ "$p" == $pat ]] && return 0
+        done
+        return 1
+    }
+
+    # Emit "lines<TAB>path", sorted desc
+    local results
+    results="$(
+        if [[ "$use_git" -eq 1 ]]; then
+            # Git-tracked files, then filter by root/pattern in a safe way.
+            ( cd "$root" 2>/dev/null && git ls-files ) \
+            | while IFS= read -r rel; do
+                  [[ "$rel" == $pattern ]] || continue
+                  printf "%s\0" "$root/$rel"
+              done
+        else
+            find "$root" -type f -name "$pattern" -print0
+        fi \
+        | while IFS= read -r -d '' f; do
+              _is_excluded "$f" && continue
+              local n
+              n=$(wc -l < "$f" 2>/dev/null) || continue
+              printf "%d\t%s\n" "$n" "$f"
+          done \
+        | sort -nr -k1,1
+    )"
+
+    # Threshold
+    if [[ "$show_all" -eq 0 ]]; then
+        results="$(printf "%s\n" "$results" | awk -F'\t' -v t="$threshold" '$1 > t')"
+    fi
+
+    # Top-N
+    if [[ -n "$top_n" ]]; then
+        results="$(printf "%s\n" "$results" | head -n "$top_n")"
+    fi
+
+    # Pretty print
+    if [[ -n "$results" ]]; then
+        printf "%s\n" "$results" | awk -F'\t' '{printf "%7d  %s\n", $1, $2}'
+    fi
+}
+
+# EOF

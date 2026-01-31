@@ -1,0 +1,50 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2025-03-08 12:22:44 (ywatanabe)"
+# File: /home/ywatanabe/.dotfiles/.bash.d/all/010_apptainer/apptainer-utils/src/006_shell_sandbox_global.at.src
+
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+
+################################################################################
+# Global Sandbox Shell Operations
+################################################################################
+
+function apptainer_shell_sandbox_global() {
+    [[ "$1" == "-h" ]] && _apptainer_shell_sandbox_global_help && return
+    echo_eval "apptainer shell \
+    $APPTAINER_RUNTIME_OPTIONS \
+    $APPTAINER_SANDBOX_IMAGE_GLOBAL_PATH \
+    "$@"
+    "
+}
+
+function apptainer_shell_sandbox_writable_global() {
+    [[ "$1" == "-h" ]] && _apptainer_shell_sandbox_writable_global_help && return
+    echo_eval "unset APPTAINER_BIND; \
+    apptainer shell \
+    $APPTAINER_WRITABLE_OPTIONS \
+    $APPTAINER_SANDBOX_IMAGE_GLOBAL_PATH \
+    "$@"
+    "
+}
+
+function _apptainer_shell_sandbox_global_help() {
+    cat << 'EOF'
+Usage: ashell_sg [-h]
+Shell into global sandbox container
+EOF
+}
+
+function _apptainer_shell_sandbox_writable_global_help() {
+    cat << 'EOF'
+Usage: ashell_sgw [-h]
+Shell into writable global sandbox container
+EOF
+}
+
+# Aliases
+alias ashell_sg='apptainer_shell_sandbox_global'
+alias ashell_swg='apptainer_shell_sandbox_writable_global'
+
+# EOF

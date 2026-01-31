@@ -1,0 +1,51 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2025-05-12 12:48:20 (ywatanabe)"
+# File: /home/ywatanabe/.bash.d/all/010_openhands.src
+
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# ---------------------------------------
+
+run_openhands() {
+    local workspace_base="$PWD/workspace"
+    local is_local=true
+    local OPTIND
+    while getopts ":lr" opt; do
+        case ${opt} in
+            l ) is_local=true ;;
+            r ) is_local=false ;;
+            \? ) echo "Usage: run_openhands [-l|-r] [/path/to/workspace]"; return 1 ;;
+        esac
+    done
+    shift $((OPTIND -1))
+
+    [ -n "$1" ] && workspace_base="$1"
+
+    local container_name="openhands-app-$(date +%Y%m%d%H%M%S)"
+    local image_name="ghcr.io/all-hands-ai/openhands:0.8"
+
+    docker pull "${image_name}_amd64"
+
+    local run_mode="-it"
+    local port_mapping="-p 3000:3000"
+    if [ "$is_local" = false ]; then
+        run_mode="-d"
+        port_mapping="-p 127.0.0.1:3000:3000"
+    fi
+
+    docker run $run_mode \
+        --pull=always \
+        -e SANDBOX_USER_ID="$(id -u)" \
+        -e WORKSPACE_MOUNT_PATH="$workspace_base" \
+        -e LLM_API_KEY="$OPENHANDS_API_KEY" \
+        -e LLM_MODEL="$OPENHANDS_MODEL" \
+        -v "$workspace_base:/opt/workspace_base" \
+        -v /var/run/docker.sock:/var/run/docker.sock \
+        $port_mapping \
+        --add-host host.docker.internal:host-gateway \
+        --name "$container_name" \
+        --platform linux/amd64 \
+        "${image_name}_amd64"
+}
+
+# EOF

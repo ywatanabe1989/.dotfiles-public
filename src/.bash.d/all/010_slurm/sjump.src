@@ -1,0 +1,94 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2025-09-14 14:06:15 (ywatanabe)"
+# File: /ssh:sp:/home/ywatanabe/.bash.d/all/010_slurm/sjump.src
+
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# ---------------------------------------
+
+# sjump() {
+#     if [ $# -eq 0 ]; then
+#         _list_jobs
+#         return 0
+#     fi
+
+#     local jobid=$(_get_jobid "$1")
+#     if [ -z "$jobid" ]; then
+#         echo "No job found at index $1"
+#         return 1
+#     fi
+
+#     local node=$(squeue -j "$jobid" -h -o "%R")
+
+
+#     if [ -n "$TMUX" ]; then
+#         tmux new-window -n "job-$jobid" "ssh -X $node"
+#     else
+#         ssh -X "$node"
+#     fi
+
+# }
+
+
+sjump() {
+    if [ $# -eq 0 ]; then
+        _list_jobs
+        return 0
+    fi
+
+    echo "DEBUG: Input argument: '$1'"
+
+    local jobs=($(squeue -h -u $USER -o "%i" | sed 's/\[.*\]//g'))
+    local n=${#jobs[@]}
+    local index=$1
+
+    if [[ $index =~ ^-[0-9]+$ ]]; then
+        index=$((n + index))
+    else
+        ((index--))
+    fi
+
+    if [ $index -lt 0 ] || [ $index -ge $n ]; then
+        echo "No job found at index $1"
+        return 1
+    fi
+
+    # Get the full job ID including array index
+    local full_jobid="${jobs[$index]}"
+    echo "DEBUG: Full jobid: '$full_jobid'"
+
+    local node=$(squeue -j "$full_jobid" -h -o "%R")
+    echo "DEBUG: Node from squeue: '$node'"
+
+    # Clean up node name - remove anything in parentheses and take first node
+    node=$(echo "$node" | sed 's/(.*//' | awk '{print $1}')
+    echo "DEBUG: Cleaned node: '$node'"
+
+    if [ -z "$node" ] || [ "$node" = "None" ]; then
+        echo "No node assigned to job $full_jobid"
+        return 1
+    fi
+
+    echo "DEBUG: Attempting SSH to: '$node'"
+
+    if [ -n "$TMUX" ]; then
+        tmux new-window -n "job-$full_jobid" "ssh -X $node"
+    else
+        ssh -X "$node"
+    fi
+}
+
+_sjump_complete() {
+    local cur=${COMP_WORDS[COMP_CWORD]}
+    local job_count=$(squeue -u $USER -h | wc -l)
+    local indices=$(seq 1 $job_count)
+    COMPREPLY=($(compgen -W "$indices" -- "$cur"))
+}
+complete -F _sjump_complete sjump
+
+alias sj="sjump"
+for i in {1..128}; do
+    alias "sj$i=sj $i"
+done
+
+# EOF

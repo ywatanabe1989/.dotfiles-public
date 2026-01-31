@@ -1,0 +1,37 @@
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "/home/ywatanabe/"
+      ]
+    },
+    "sequential-thinking": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"]
+    },
+    "scitex": {
+      "command": "/home/ywatanabe/.venv/bin/scitex",
+      "args": ["mcp", "start"],
+      "env": {
+        "SCITEX_ENV_SRC": "${SCITEX_ENV_SRC}",
+        "ELEVENLABS_API_KEY": "${ELEVENLABS_API_KEY}"
+      }
+    },
+    "crossref-local": {
+      "command": "/home/ywatanabe/.venv/bin/crossref-local",
+      "args": ["mcp", "start"]
+    },
+    "crossref-local-remote": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "http://localhost:8082/mcp"],
+      "comment": "In remote, crossref-local run-server-mcp -t http"
+    },
+    "playwright": {
+      "command": "npx",
+      "args": ["@playwright/mcp@latest"]
+    }
+  }
+}

@@ -1,0 +1,449 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2025-03-08 12:22:44 (ywatanabe)"
+# File: /home/ywatanabe/.dotfiles/.bash.d/all/010_apptainer/apptainer-utils/src/001_mkdirs.at.src
+
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+
+apptainer_init_or_update_dir() {
+    local container_name="container-template"
+    local base_path="."
+
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            -c) shift; container_name="$1"; shift ;;
+            -p) shift; base_path="$1"; shift ;;
+            -h) _apptainer_init_or_update_dir_help; return 0 ;;
+            *) echo "Invalid option: $1" >&2; return 1 ;;
+        esac
+    done
+
+    local apptainer_dir="$base_path/.apptainer"
+
+    _apptainer_mkdir -c "$container_name" -p "$base_path" 2>/dev/null
+    _apptainer_def_versions "$apptainer_dir/$container_name" 2>/dev/null
+    _apptainer_def_differences "$apptainer_dir/$container_name" 2>/dev/null
+    _apptainer_update_symlinks -d "$apptainer_dir" -c "$container_name" 2>/dev/null
+
+    echo "Container directory structure updated successfully"
+    echo ""
+    tree "$apptainer_dir" -L 2
+    echo ""
+    echo "Next steps:"
+    echo "1. Edit $base_path/.apptainer/$container_name/definitions/$container_name.def"
+    echo "2. Build $base_path/.apptainer/$container_name/definitions/$container_name.def"
+    echo "3. Verify symlinks $base_path/.apptainer/image.{sif,sandbox}"
+}
+
+alias adir='apptainer_init_or_update_dir'
+
+################################################################################
+# Helper functions
+################################################################################
+_mkdir_touch() {
+    local file_path="$1"
+    local dir_path=$(dirname "$file_path")
+    mkdir -p "$dir_path" 2>/dev/null
+    touch "$file_path" 2>/dev/null
+}
+
+_apptainer_mkdir() {
+    local container_name="container-template"
+    local base_path="."
+
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            -c) shift; container_name="$1"; shift ;;
+            -p) shift; base_path="$1"; shift ;;
+            -h) _apptainer_mkdir_help; return 0 ;;
+            *) echo "Invalid option: $1" >&2; return 1 ;;
+        esac
+    done
+
+    local apptainer_dir="$base_path/.apptainer"
+    local container_dir="$apptainer_dir/$container_name"
+
+    mkdir -p "$container_dir/definitions" 2>/dev/null
+
+    _mkdir_touch "$container_dir/$container_name.sif"
+    _mkdir_touch "$container_dir/$container_name.sandbox"
+    _mkdir_touch "$container_dir/$container_name.sif.log"
+    _mkdir_touch "$container_dir/$container_name.sandbox.log"
+    _mkdir_touch "$container_dir/definitions/${container_name}_v001.def"
+    _mkdir_touch "$apptainer_dir/image.sif"
+    _mkdir_touch "$apptainer_dir/image.sandbox"
+
+    rm -f "$apptainer_dir/image.sif" "$apptainer_dir/image.sandbox"
+    ln -sfr "$container_dir/$container_name.sif" "$apptainer_dir/image.sif"
+    ln -sfr "$container_dir/$container_name.sandbox" "$apptainer_dir/image.sandbox"
+
+    return 0
+}
+
+_apptainer_def_versions() {
+    local container_dir="$1"
+    local latest=$(ls -v "$container_dir/definitions"/*_v[0-9]*.def 2>/dev/null | tail -n1)
+    [[ -n "$latest" ]] && {
+        cd "$container_dir/definitions"
+        ln -sfr "$(basename "$latest")" "$(basename "$container_dir")_latest.def"
+        cd - >/dev/null
+    }
+}
+
+_apptainer_def_differences() {
+    local container_dir="$1"
+    local defs_dir="$container_dir/definitions"
+    local diff_dir="$defs_dir/differences"
+
+    mkdir -p "$diff_dir" 2>/dev/null
+
+    local versions=($(ls -v "$defs_dir"/*_v[0-9]*.def 2>/dev/null))
+    for ((i=0; i<${#versions[@]}-1; i++)); do
+        local curr=${versions[i]}
+        local next=${versions[i+1]}
+        local curr_base=$(basename "$curr" .def)
+        local next_base=$(basename "$next" .def)
+        local diff_file="$diff_dir/${curr_base}_${next_base}.diff"
+
+        [[ ! -f "$diff_file" ]] && diff -u "$curr" "$next" > "$diff_file" 2>/dev/null
+    done
+}
+
+_apptainer_update_symlinks() {
+    local apptainer_dir=""
+    local container_name="container-template"
+
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            -d) shift; apptainer_dir="$1"; shift ;;
+            -c) shift; container_name="$1"; shift ;;
+            *) echo "Invalid option: $1" >&2; return 1 ;;
+        esac
+    done
+
+    [[ -z "$apptainer_dir" ]] && { echo "Error: -d option required" >&2; return 1; }
+
+    local container_dir="$apptainer_dir/$container_name"
+
+    rm -f "$apptainer_dir/image.sif" \
+         "$apptainer_dir/image.sandbox" \
+         "$apptainer_dir/$container_name/$container_name.def"
+
+    ln -sfr "$container_dir/$container_name.sif" "$apptainer_dir/image.sif"
+    ln -sfr "$container_dir/$container_name.sandbox" "$apptainer_dir/image.sandbox"
+    ln -sfr "$container_dir/definitions/${container_name}_latest.def" "$container_dir/$container_name.def"
+}
+
+# _apptainer_mkdir_help() {
+#     cat << 'EOF'
+# Usage: apptainer_mkdir [-c CONTAINER_NAME] [-p PATH] [-h]
+# Usage: amkdir [-c CONTAINER_NAME] [-p PATH] [-h]
+
+# Creates Apptainer directory structure
+
+# Options:
+#     -c CONTAINER_NAME  Container name (default: "container-template")
+#     -p PATH           Target directory (default: current directory)
+#     -h               Show this help message
+
+# Example:
+#     $ adir -c proj_a
+#     $ adir -c proj_b
+
+# }
+
+# _apptainer_init_or_update_dir_help() {
+#     cat << 'EOF'
+# Usage: apptainer_init_or_update_dir [-c CONTAINER_NAME] [-p PATH] [-h]
+# Usage: adir [-c CONTAINER_NAME] [-p PATH] [-h]
+
+# Initializes or updates Apptainer container directory structure.
+# Combines directory creation, version management, and symlink updates.
+
+# Options:
+#     -c CONTAINER_NAME  Container name (default: "container-template")
+#     -p PATH           Target directory (default: current directory)
+#     -h               Show this help message
+
+# Example:
+#     adir -c proj_A
+#     adir -c proj_B -p /path/to/project
+
+# Workflow:
+# 1. Creates directory structure
+# 2. Updates definition versions
+# 3. Updates symbolic links
+
+# }
+
+# #!/bin/bash
+# # Time-stamp: "2024-12-09 09:30:10 (ywatanabe)"
+# # File: ./apptainer-utils/src/001_mkdirs.src
+
+# _mkdir_touch() {
+#     local file_path="$1"
+#     local dir_path=$(dirname "$file_path")
+#     mkdir -p "$dir_path" 2>&1 >/dev/null
+#     touch "$file_path" 2>&1 >/dev/null
+# }
+
+# # This function works for argument parsing
+# _apptainer_mkdir() {
+#     local CONTAINER_NAME="container-template"
+#     local BASE_PATH="."
+
+#     while [[ $# -gt 0 ]]; do
+#         case $1 in
+#             -c)
+#                 shift
+#                 CONTAINER_NAME="$1"
+#                 shift
+#                 ;;
+#             -p)
+#                 shift
+#                 BASE_PATH="$1"
+#                 shift
+#                 ;;
+#             -h)
+#                 _apptainer_mkdir_help
+#                 return 0
+#                 ;;
+#             *)
+#                 echo "Invalid option: $1" 1>&2
+#                 return 1
+#                 ;;
+#         esac
+#     done
+
+#     local APPTAINER_DIR=$BASE_PATH/.apptainer
+#     local CONTAINER_DIR="$APPTAINER_DIR/$CONTAINER_NAME"
+
+#     mkdir -p "$CONTAINER_DIR/definitions" 2>&1 >/dev/null
+
+#     _mkdir_touch "$CONTAINER_DIR/$CONTAINER_NAME.sif" 2>&1 >/dev/null
+#     _mkdir_touch "$CONTAINER_DIR/$CONTAINER_NAME.sandbox" 2>&1 >/dev/null
+#     _mkdir_touch "$CONTAINER_DIR/$CONTAINER_NAME.sif.log" 2>&1 >/dev/null
+#     _mkdir_touch "$CONTAINER_DIR/$CONTAINER_NAME.sandbox.log" 2>&1 >/dev/null
+#     _mkdir_touch "$CONTAINER_DIR/definitions/${CONTAINER_NAME}_v001.def" 2>&1 >/dev/null
+#     _mkdir_touch "$APPTAINER_DIR/image.sif" 2>&1 >/dev/null
+#     _mkdir_touch "$APPTAINER_DIR/image.sandbox" 2>&1 >/dev/null
+
+#     # Remove previous symlinks
+#     rm -f "$APPTAINER_DIR/image.sif" "$APPTAINER_DIR/image.sandbox"
+
+#     # Create new symlinks
+#     ln -sfr "$CONTAINER_DIR/$container_name.sif" "$APPTAINER_DIR/image.sif"
+#     ln -sfr "$CONTAINER_DIR/$container_name.sandbox" "$APPTAINER_DIR/image.sandbox"
+
+#     return 0
+# }
+
+# _apptainer_def_versions() {
+#     local CONTAINER_DIR="$1"
+#     local latest=$(ls -v "$CONTAINER_DIR/definitions"/*_v[0-9]*.def 2>/dev/null | tail -n1)
+#     if [[ -n "$latest" ]]; then
+#         cd "$CONTAINER_DIR/definitions"
+#         ln -sfr "$(basename "$latest")" "$(basename "$CONTAINER_DIR")_latest.def"
+#         cd - >/dev/null
+#     fi
+# }
+
+# _apptainer_def_differences() {
+#     local CONTAINER_DIR="$1"
+#     local defs_dir="$CONTAINER_DIR/definitions"
+#     local diff_dir="$defs_dir/differences"
+
+#     mkdir -p "$diff_dir" 2>&1 >/dev/null
+
+#     # Get all version files sorted
+#     local versions=($(ls -v "$defs_dir"/*_v[0-9]*.def 2>/dev/null))
+
+#     # Create diffs between consecutive versions
+#     for ((i=0; i<${#versions[@]}-1; i++)); do
+#         local curr=${versions[i]}
+#         local next=${versions[i+1]}
+#         local curr_base=$(basename "$curr" .def)
+#         local next_base=$(basename "$next" .def)
+#         local diff_file="$diff_dir/${curr_base}_${next_base}.diff"
+
+#         if [[ ! -f "$diff_file" ]]; then
+#             diff -u "$curr" "$next" > "$diff_file" 2>/dev/null
+#         fi
+#     done
+# }
+
+# _apptainer_update_symlinks() {
+#     local APPTAINER_DIR=""
+#     local CONTAINER_NAME="container-template"
+#     while [[ $# -gt 0 ]]; do
+#         case $1 in
+#             -d)
+#                 shift
+#                 APPTAINER_DIR="$1"
+#                 shift
+#                 ;;
+#             -c)
+#                 shift
+#                 CONTAINER_NAME="$1"
+#                 shift
+#                 ;;
+#             *)
+#                 echo "Invalid option: $1" 1>&2
+#                 return 1
+#                 ;;
+#         esac
+#     done
+
+#     [[ -z "$APPTAINER_DIR" ]] && { echo "Error: -d option required" >&2; return 1; }
+
+#     local CONTAINER_DIR="$APPTAINER_DIR/$CONTAINER_NAME"
+
+#     rm -f "$APPTAINER_DIR/image.sif" \
+#          "$APPTAINER_DIR/image.sandbox" \
+#          "$APPTAINER_DIR/$CONTAINER_NAME/$CONTAINER_NAME.def"
+
+#     ln -sfr "$CONTAINER_DIR/$CONTAINER_NAME.sif" "$APPTAINER_DIR/image.sif"
+#     ln -sfr "$CONTAINER_DIR/$CONTAINER_NAME.sandbox" "$APPTAINER_DIR/image.sandbox"
+#     ln -sfr "$CONTAINER_DIR/definitions/${CONTAINER_NAME}_latest.def" "$CONTAINER_DIR/$CONTAINER_NAME.def"
+# }
+
+
+# apptainer_init_or_update_dir() {
+#     local CONTAINER_NAME="container-template"
+#     local BASE_PATH="."
+
+
+#     while [[ $# -gt 0 ]]; do
+#         case $1 in
+#             -c)
+#                 shift
+#                 CONTAINER_NAME="$1"
+#                 shift
+#                 ;;
+#             -p)
+#                 shift
+#                 BASE_PATH="$1"
+#                 shift
+#                 ;;
+#             -h)
+#                 _apptainer_init_or_update_dir_help
+#                 return 0
+#                 ;;
+#             *)
+#                 echo "Invalid option: $1" 1>&2
+#                 return 1
+#                 ;;
+#         esac
+#     done
+
+#     local APPTAINER_DIR=$BASE_PATH/.apptainer
+
+#     _apptainer_mkdir -c "$CONTAINER_NAME" -p "$BASE_PATH" 2>/dev/null
+#     _apptainer_def_versions "$APPTAINER_DIR/$CONTAINER_NAME" 2>/dev/null
+#     _apptainer_def_differences "$APPTAINER_DIR/$CONTAINER_NAME" 2>/dev/null
+#     _apptainer_update_symlinks -d "$APPTAINER_DIR" -c "$CONTAINER_NAME" 2>/dev/null
+
+#     echo "Container directory structure updated successfully"
+#     echo ""
+#     tree $APPTAINER_DIR -L 2
+#     echo ""
+#     echo "You might want to:"
+#     echo "    - Implement $BASE_PATH/.apptainer/$CONTAINER_NAME/definitions/$CONTAINER_NAME.def"
+#     echo "    - Make $BASE_PATH/.apptainer/$CONTAINER_NAME/definitions/$CONTAINER_NAME.def"
+#     echo "    - Update symlinks $BASE_PATH/.apptainer/image.{sif,sandbox}"
+# }
+
+# alias adir='apptainer_init_or_update_dir'
+
+_apptainer_mkdir_help() {
+    cat << 'EOF'
+Usage: apptainer_mkdir [-c CONTAINER_NAME] [-p PATH] [-h|--help]
+Usage: amkdir [-c CONTAINER_NAME] [-p PATH] [-h|--help]
+
+Creates initial Apptainer directory structure
+
+Options:
+    -c CONTAINER_NAME  Name for container (default: "container-template")
+    -p PATH            Target directory (default: current directory)
+    -h, --help         Show this help message
+
+Example:
+    ########################################
+    # First call for the proj_b container
+    ########################################
+    $ adir -c proj_a
+    Container directory structure updated successfully
+
+    ./.apptainer
+    ├── image.sandbox -> proj_a/proj_a.sandbox
+    ├── image.sif -> proj_a/proj_a.sif
+    └── proj_a
+        ├── definitions
+        │   ├── differences
+        │   ├── proj_a_latest.def -> proj_a_v001.def
+        │   └── proj_a_v001.def
+        ├── proj_a.def -> definitions/proj_a_v001.def
+        ├── proj_a.sandbox
+        ├── proj_a.sandbox.log
+        ├── proj_a.sif
+        └── proj_a.sif.log
+
+    ########################################
+    # Second call for the proj_b container
+    ########################################
+    $ adir -c proj_b
+    Container directory structure updated successfully
+
+    ./.apptainer
+    ├── image.sandbox -> proj_b/proj_b.sandbox
+    ├── image.sif -> proj_b/proj_b.sif
+    ├── proj_a
+    │   ├── definitions
+    │   │   ├── differences
+    │   │   ├── proj_a_latest.def -> proj_a_v001.def
+    │   │   └── proj_a_v001.def
+    │   ├── proj_a.def -> definitions/proj_a_v001.def
+    │   ├── proj_a.sandbox
+    │   ├── proj_a.sandbox.log
+    │   ├── proj_a.sif
+    │   └── proj_a.sif.log
+    └── proj_b
+        ├── definitions
+        │   ├── differences
+        │   ├── proj_b_latest.def -> proj_b_v001.def
+        │   └── proj_b_v001.def
+        ├── proj_b.def -> definitions/proj_b_v001.def
+        ├── proj_b.sandbox
+        ├── proj_b.sandbox.log
+        ├── proj_b.sif
+        └── proj_b.sif.log
+EOF
+}
+
+
+# _apptainer_init_or_update_dir_help() {
+#     cat << 'EOF'
+# Usage: apptainer_init_or_update_dir [-c CONTAINER_NAME] [-p PATH] [-h|--help]
+# Usage: adir [-c CONTAINER_NAME] [-p PATH] [-h|--help]
+
+# Initializes or updates Apptainer container directory structure.
+# This command combines mkdir, version management, and symlink updates.
+
+# Options:
+#     -c CONTAINER_NAME  Name for container (default: "container-template")
+#     -p PATH           Target directory (default: current directory)
+#     -h, --help        Show this help message
+
+# Example:
+#     adir -c proj_A
+#     adir -c proj_B -p /path/to/project
+
+# Workflow:
+# 1. Creates directory structure if not exists
+# 2. Updates definition file versions
+# 3. Updates symbolic links
+
+# }
+
+# EOF

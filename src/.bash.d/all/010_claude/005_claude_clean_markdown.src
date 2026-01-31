@@ -1,0 +1,121 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2025-12-23 10:50:00 (ywatanabe)"
+# File: /home/ywatanabe/.dotfiles/.bash.d/all/010_claude/005_claude_clean_markdown.src
+# Description: Shared markdown/text cleaning functions for Claude Code configs
+
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# ------------------------------------------------------------------------------
+# Text cleaning functions for markdown files
+# Used by agents, skills, and other Claude config management
+# ------------------------------------------------------------------------------
+
+# Remove HTML comment headers (<!-- --- ... !-- --- -->) and EOF markers
+# Usage: _cld_md_delete_html_tags <file>
+_cld_md_delete_html_tags() {
+    local file=$1
+    [[ ! -f "$file" ]] && return 1
+    sed -i -e '/^<!-- ---$/,/^!-- --- -->$/d' -e '/^<!-- EOF -->$/d' "$file"
+}
+
+# Remove leading blank/whitespace-only lines
+# Usage: _cld_md_delete_leading_whitespaces <file>
+_cld_md_delete_leading_whitespaces() {
+    local file=$1
+    [[ ! -f "$file" ]] && return 1
+    sed -i -n '/[^[:space:]]/,$p' "$file"
+}
+
+# Remove trailing blank/whitespace-only lines
+# Usage: _cld_md_delete_trailing_whitespaces <file>
+_cld_md_delete_trailing_whitespaces() {
+    local file=$1
+    [[ ! -f "$file" ]] && return 1
+    sed -i -e ':a' -e '/^[[:space:]]*$/{ $d; N; ba; }' "$file"
+}
+
+# Apply all cleaning functions to a file
+# Usage: _cld_md_clean_file <file>
+_cld_md_clean_file() {
+    local file=$1
+    [[ ! -f "$file" ]] && return 1
+    _cld_md_delete_html_tags "$file"
+    _cld_md_delete_leading_whitespaces "$file"
+    _cld_md_delete_trailing_whitespaces "$file"
+}
+
+# Clean all markdown files in a directory (non-recursive)
+# Usage: _cld_md_clean_dir <directory>
+_cld_md_clean_dir() {
+    local dir=$1
+    [[ ! -d "$dir" ]] && return 1
+    for md_file in "$dir"/*.md; do
+        [[ -f "$md_file" ]] && _cld_md_clean_file "$md_file"
+    done
+}
+
+# Clean all markdown files in a directory tree (recursive)
+# Usage: _cld_md_clean_tree <directory>
+_cld_md_clean_tree() {
+    local dir=$1
+    [[ ! -d "$dir" ]] && return 1
+    find "$dir" -name "*.md" -type f | while read -r md_file; do
+        _cld_md_clean_file "$md_file"
+    done
+}
+
+# Check if file has HTML header that needs fixing
+# Usage: _cld_md_has_html_header <file>
+# Returns: 0 if has HTML header, 1 otherwise
+_cld_md_has_html_header() {
+    local file=$1
+    [[ ! -f "$file" ]] && return 1
+    grep -q "^<!-- " "$file"
+}
+
+# Check if file starts with valid YAML frontmatter
+# Usage: _cld_md_has_valid_frontmatter <file>
+# Returns: 0 if valid, 1 otherwise
+_cld_md_has_valid_frontmatter() {
+    local file=$1
+    [[ ! -f "$file" ]] && return 1
+    local first_line=$(head -1 "$file")
+    [[ "$first_line" == "---" ]]
+}
+
+# Fix a file by removing HTML header before YAML frontmatter
+# Usage: _cld_md_fix_frontmatter <file> [dry_run]
+# dry_run: 0 = apply changes, 1 = show only
+_cld_md_fix_frontmatter() {
+    local file=$1
+    local dry_run=${2:-0}
+
+    [[ ! -f "$file" ]] && return 1
+
+    local first_line=$(head -1 "$file")
+
+    # Already valid
+    if [[ "$first_line" == "---" ]]; then
+        return 0
+    fi
+
+    # Check if file has HTML comment header followed by YAML frontmatter
+    if grep -q "^<!-- " "$file" && grep -q "^---$" "$file"; then
+        local yaml_start=$(grep -n "^---$" "$file" | head -1 | cut -d: -f1)
+
+        if [[ -n "$yaml_start" ]]; then
+            if [[ $dry_run -eq 0 ]]; then
+                chmod 644 "$file" 2>/dev/null
+                local tmp_file=$(mktemp)
+                tail -n +$yaml_start "$file" > "$tmp_file"
+                mv "$tmp_file" "$file"
+            fi
+            return 0
+        fi
+    fi
+
+    return 1
+}
+
+# EOF

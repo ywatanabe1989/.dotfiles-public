@@ -1,0 +1,87 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2025-10-29 15:37:01 (ywatanabe)"
+# File: /home/ywatanabe/.dotfiles/.bash.d/all/010_git/git_configure.src
+
+# shellcheck disable=SC2034
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# ---------------------------------------
+
+git_configure() {
+    # Configures git settings for different profiles
+    #
+    # Usage:
+    #   git_configure profile
+    #   profile: wyusuuke|opendevin|alumni|work
+    local profile="$1"
+    local email=""
+    local name=""
+    case "$profile" in
+    "ywatanabe")
+        email="ywatanabe@scitex.ai"
+        name="Yusuke Watanabe"
+        ;;
+    "ywata1989")
+        email="ywata1989@gmail.com"
+        name="Yusuke Watanabe"
+        ;;
+    "wyusuuke")
+        email="wyusuuke@gmail.com"
+        name="Yusuke Watanabe"
+        ;;
+    "unimelb")
+        email="Yusuke.Watanabe@unimelb.edu.au"
+        name="Yusuke Watanabe"
+        ;;
+    "agent-scitex")
+        email="agent@scitex.ai"
+        name="SciTeX-AI"
+        ;;
+    *)
+        echo "Invalid profile. Use: ywata1989|ywatanabe|wyusuuke|unimelb|agent-scitex"
+        return 1
+        ;;
+    esac
+
+    # Check if current directory is under git repository
+    if ! git rev-parse --git-dir >/dev/null 2>&1; then
+        echo "Not in a git repository. Skipping local configuration."
+        scope="--global"
+        git config $scope user.email "$email"
+        git config $scope user.name "$name"
+        git config $scope committer.email "$email"
+        git config $scope committer.name "$name"
+        if [ -d "$HOME/.git-templates" ]; then
+            git config $scope init.templatedir "$HOME/.git-templates"
+        fi
+        git config $scope pull.rebase false
+        git config $scope push.autoSetupRemote true
+        return
+    fi
+
+    for scope in --local --global; do
+        git config $scope user.email "$email"
+        git config $scope user.name "$name"
+        git config $scope committer.email "$email"
+        git config $scope committer.name "$name"
+        if [ -d "$HOME/.git-templates" ]; then
+            git config $scope init.templatedir "$HOME/.git-templates"
+        fi
+        git config $scope pull.rebase false
+        git config $scope push.autoSetupRemote true
+    done
+    git config advice.addIgnoredFile false
+
+    # Track file permissions across machines
+    git config --global core.filemode true
+}
+
+git_configure_auto_merge_timestamp() {
+    git config merge.driver.timestamp.name "Select latest timestamp"
+    git config merge.driver.timestamp.driver "grep -h 'Time-stamp:' %A %B | sort -r | head -n1 > %A"
+    touch .gitattributes
+    echo "*     merge=timestamp" >>.gitattributes
+}
+# git_configure alumni >/dev/null 2>&1
+
+# EOF

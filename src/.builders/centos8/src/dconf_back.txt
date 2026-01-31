@@ -1,0 +1,9 @@
+[custom1]
+binding='<Primary><Alt>s'
+command='gnome-control-center'
+name='gnome-control-center'
+
+[custom0]
+binding='<Primary><Alt>t'
+command='gnome-terminal'
+name='gnome-terminal'

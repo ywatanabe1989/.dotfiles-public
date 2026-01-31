@@ -1,0 +1,34 @@
+# old directories as trash bin
+*old*
+**/*old*
+.old
+**/.old
+.dev
+**/.dev
+.playground
+**/.playground
+**/.dev
+.dev
+**/.legacy
+.legacy
+
+# Backup
+**/*_back
+**/*_backup
+**/*_backups
+
+# Renaming
+**/.rename_backups
+**/.rename_backups
+
+# Logs
+*.log
+**/*.log
+**RUNNING**
+**FINISHED**
+**/RUNNING
+**/FINISHED
+**/202?Y-*
+
+# TODO
+**/TODO.md

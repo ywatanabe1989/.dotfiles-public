@@ -1,0 +1,13 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2025-03-06 12:53:28 (ywatanabe)"
+# File: /home/ywatanabe/.dotfiles/.bash.d/all/010_github/github_config.src
+
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# sudo apt install -y gitsome
+if type gh > /dev/null 2>&1; then
+    gh config set pager more > /dev/null
+fi
+
+# EOF

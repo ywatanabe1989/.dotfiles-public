@@ -1,0 +1,44 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "$(date "+%Y-%m-%d %H:%M:%S") (ywatanabe)"
+# File: /home/ywatanabe/.dotfiles/.bash.d/all/010_git/git_tools_aliases.src
+
+# Path to our new git tools
+export GIT_TOOLS_DIR="$HOME/.bin/git-tools"
+export PATH="$GIT_TOOLS_DIR/commands:$PATH"
+
+# Aliases for basic commands
+alias st='git-st'
+alias ac='git-ac'
+alias acp='git-acp'
+
+# Aliases for specialized commands  
+alias track='git-track'
+alias untrack='git-untrack'  # To be implemented later
+
+# Repository management aliases
+alias git-new='git-init'
+
+# Conflict resolution aliases
+alias rtc='git-resolve-timestamp-conflicts'  # To be implemented as standalone
+
+# Tree/structure viewing
+alias gt='git-tree'
+
+# Function to quickly show available git tools
+git-tools-help() {
+    echo "Available git tools:"
+    echo "  st      - Show git status with file sizes"
+    echo "  ac      - Add and commit"
+    echo "  acp     - Add, commit, and push"
+    echo "  track   - Track files/directories in git"
+    echo "  gt      - Show git tree structure"
+    echo "  git-new - Initialize new git repository"
+    echo
+    echo "Use '<command> -h' for detailed help on each command"
+}
+
+# Add the tools directory to PATH if not already there
+if [[ ":$PATH:" != *":$GIT_TOOLS_DIR/commands:"* ]]; then
+    export PATH="$GIT_TOOLS_DIR/commands:$PATH"
+fi

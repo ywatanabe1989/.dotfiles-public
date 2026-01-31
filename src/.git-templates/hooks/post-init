@@ -1,0 +1,16 @@
+#!/bin/bash
+# ~/.git-templates/hooks/post-init
+# Please locate this file as .git/hooks/post-init
+
+source $HOME/.bash.d/all/030_git/git_add_gitignore_template.sh
+source $HOME/.bash.d/all/030_git/git_add_configure.sh
+# source $HOME/.git-templates/hooks/functions/git-add-gitignore-template.sh
+
+main() {
+    git_add_git_ignore_template
+    git_configure_auto_merge_timestamp
+}
+
+main
+
+# EOF

@@ -1,0 +1,255 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2025-12-18 (ywatanabe)"
+# File: /home/ywatanabe/.dotfiles/.bash.d/all/010_claude/010_claude_hooks.src
+
+# ============================================================================
+# Claude Code Hooks Management
+# ============================================================================
+#
+# Commands:
+#   cldh-ls       List all hooks in current project
+#   cldh-sync     Sync central hooks to project
+#   cldh-edit     Edit project hooks settings
+#   cldh-enable   Enable hooks for current project
+#   cldh-disable  Disable hooks for current project
+#   cldh-test     Test a specific hook script
+#
+# Central hooks location: ~/.claude/to_claude/hooks/
+# Project hooks config:   .claude/settings.json (hooks section)
+#
+# ============================================================================
+
+# Source directory for central hooks
+_CLD_HOOKS_CENTRAL_DIR="$HOME/.claude/to_claude/hooks"
+
+# ----------------------------------------
+# List hooks
+# ----------------------------------------
+cldh-ls() {
+    local show_all=false
+
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            -a|--all) show_all=true; shift ;;
+            -h|--help)
+                echo "Usage: cldh-ls [-a|--all]"
+                echo "  -a, --all  Show central hooks as well"
+                return 0
+                ;;
+            *) shift ;;
+        esac
+    done
+
+    echo "=== Project Hooks Configuration ==="
+    if [[ -f ".claude/settings.json" ]]; then
+        if command -v jq &>/dev/null; then
+            jq '.hooks // empty' .claude/settings.json 2>/dev/null || echo "(no hooks configured)"
+        else
+            grep -A 100 '"hooks"' .claude/settings.json 2>/dev/null | head -50 || echo "(no hooks configured)"
+        fi
+    else
+        echo "(no .claude/settings.json found)"
+    fi
+
+    if $show_all; then
+        echo ""
+        echo "=== Central Hooks (${_CLD_HOOKS_CENTRAL_DIR}) ==="
+        if [[ -d "$_CLD_HOOKS_CENTRAL_DIR" ]]; then
+            ls -la "$_CLD_HOOKS_CENTRAL_DIR"/*.sh 2>/dev/null || echo "(no hooks found)"
+        else
+            echo "(central hooks directory not found)"
+        fi
+    fi
+}
+
+# ----------------------------------------
+# Sync central hooks to project
+# ----------------------------------------
+cldh-sync() {
+    local force=false
+
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            -f|--force) force=true; shift ;;
+            -h|--help)
+                echo "Usage: cldh-sync [-f|--force]"
+                echo "  Syncs central hooks config to project .claude/settings.json"
+                echo "  -f, --force  Overwrite existing hooks config"
+                return 0
+                ;;
+            *) shift ;;
+        esac
+    done
+
+    if [[ ! -d "$_CLD_HOOKS_CENTRAL_DIR" ]]; then
+        echo "ERROR: Central hooks directory not found: $_CLD_HOOKS_CENTRAL_DIR"
+        return 1
+    fi
+
+    # Create .claude directory if needed
+    mkdir -p .claude
+
+    # Check if settings.json exists
+    if [[ -f ".claude/settings.json" ]]; then
+        if ! $force; then
+            # Check if hooks already configured
+            if command -v jq &>/dev/null && jq -e '.hooks' .claude/settings.json &>/dev/null; then
+                echo "WARNING: Hooks already configured in .claude/settings.json"
+                echo "Use -f to overwrite"
+                return 1
+            fi
+        fi
+
+        # Merge hooks into existing settings
+        if command -v jq &>/dev/null && [[ -f "$_CLD_HOOKS_CENTRAL_DIR/settings.json.example" ]]; then
+            local hooks_config
+            hooks_config=$(jq '.hooks' "$_CLD_HOOKS_CENTRAL_DIR/settings.json.example")
+            jq --argjson hooks "$hooks_config" '. + {hooks: $hooks}' .claude/settings.json > .claude/settings.json.tmp
+            mv .claude/settings.json.tmp .claude/settings.json
+            echo "✓ Hooks merged into .claude/settings.json"
+        else
+            echo "WARNING: jq not available or example not found, copying example file"
+            cp "$_CLD_HOOKS_CENTRAL_DIR/settings.json.example" .claude/settings.json
+            echo "✓ Copied hooks config to .claude/settings.json"
+        fi
+    else
+        # Copy example as new settings.json
+        if [[ -f "$_CLD_HOOKS_CENTRAL_DIR/settings.json.example" ]]; then
+            cp "$_CLD_HOOKS_CENTRAL_DIR/settings.json.example" .claude/settings.json
+            echo "✓ Created .claude/settings.json with hooks config"
+        else
+            echo "ERROR: Example config not found: $_CLD_HOOKS_CENTRAL_DIR/settings.json.example"
+            return 1
+        fi
+    fi
+}
+
+# ----------------------------------------
+# Edit project hooks settings
+# ----------------------------------------
+cldh-edit() {
+    local editor="${EDITOR:-vim}"
+
+    if [[ ! -f ".claude/settings.json" ]]; then
+        echo "No .claude/settings.json found. Run cldh-sync first."
+        return 1
+    fi
+
+    $editor .claude/settings.json
+}
+
+# ----------------------------------------
+# Enable hooks (copy config if missing)
+# ----------------------------------------
+cldh-enable() {
+    if [[ -f ".claude/settings.json" ]]; then
+        echo "Hooks config already exists at .claude/settings.json"
+        cldh-ls
+    else
+        cldh-sync
+    fi
+}
+
+# ----------------------------------------
+# Disable hooks (rename config)
+# ----------------------------------------
+cldh-disable() {
+    if [[ -f ".claude/settings.json" ]]; then
+        mv .claude/settings.json .claude/settings.json.disabled
+        echo "✓ Hooks disabled (renamed to .claude/settings.json.disabled)"
+    else
+        echo "No .claude/settings.json found"
+    fi
+}
+
+# ----------------------------------------
+# Test a hook script
+# ----------------------------------------
+cldh-test() {
+    local hook_name="$1"
+    local test_file="${2:-/dev/null}"
+
+    if [[ -z "$hook_name" ]]; then
+        echo "Usage: cldh-test <hook-name> [test-file]"
+        echo ""
+        echo "Available hooks:"
+        ls -1 "$_CLD_HOOKS_CENTRAL_DIR"/*.sh 2>/dev/null | xargs -n1 basename | sed 's/.sh$//'
+        return 1
+    fi
+
+    local hook_path="$_CLD_HOOKS_CENTRAL_DIR/${hook_name}.sh"
+    if [[ ! -f "$hook_path" ]]; then
+        hook_path="$_CLD_HOOKS_CENTRAL_DIR/${hook_name}"
+    fi
+
+    if [[ ! -f "$hook_path" ]]; then
+        echo "ERROR: Hook not found: $hook_name"
+        return 1
+    fi
+
+    echo "Testing hook: $hook_path"
+    echo "With file: $test_file"
+    echo "---"
+
+    # Create test JSON input
+    local test_input
+    test_input=$(cat <<EOF
+{
+  "tool_input": {
+    "file_path": "$test_file",
+    "content": "test content line 1\ntest content line 2\n"
+  },
+  "notification_type": "idle_prompt"
+}
+EOF
+)
+
+    echo "$test_input" | "$hook_path"
+    local exit_code=$?
+
+    echo "---"
+    echo "Exit code: $exit_code"
+    case $exit_code in
+        0) echo "Status: OK (proceed)" ;;
+        1) echo "Status: Warning (continue with feedback)" ;;
+        2) echo "Status: Error (blocked, Claude must fix)" ;;
+        *) echo "Status: Unknown" ;;
+    esac
+}
+
+# ----------------------------------------
+# Show hooks help
+# ----------------------------------------
+cldh-help() {
+    cat <<EOF
+Claude Code Hooks Management
+
+Commands:
+  cldh-ls [-a]      List hooks (use -a to show central hooks too)
+  cldh-sync [-f]    Sync central hooks config to project
+  cldh-edit         Edit project hooks settings
+  cldh-enable       Enable hooks for current project
+  cldh-disable      Disable hooks (rename config file)
+  cldh-test <hook>  Test a specific hook script
+
+Central hooks: $_CLD_HOOKS_CENTRAL_DIR
+Project config: .claude/settings.json
+
+Hook Events:
+  PreToolUse    - Before Write/Edit (gate violations)
+  PostToolUse   - After Write/Edit (format, lint, test)
+  Notification  - When Claude needs attention (voice/email)
+  Stop          - Task completion (final checks)
+
+Exit Codes:
+  0 = OK (proceed)
+  1 = Warning (Claude sees feedback)
+  2 = Error (Claude must fix)
+EOF
+}
+
+# Aliases
+alias cldh='cldh-help'
+
+# EOF

@@ -1,0 +1,18 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2025-03-06 12:47:40 (ywatanabe)"
+# File: /home/ywatanabe/.dotfiles/.bash.d/all/030_git/git_sync_.src
+
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+alias gs="git_sync &"
+
+acps() {
+    echo_eval "acp \"$@\" && sleep 0.5 && git_sync -d \"$(pwd)\" &"
+}
+
+psy() {
+    echo_eval "git push && git_sync -d \"$(pwd)\" &"
+}
+
+# EOF

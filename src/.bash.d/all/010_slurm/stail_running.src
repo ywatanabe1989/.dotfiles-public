@@ -1,0 +1,74 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2025-06-28 18:39:37 (ywatanabe)"
+# File: /ssh:sp:/home/ywatanabe/.bash.d/all/010_slurm/stail_running.src
+
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# ---------------------------------------
+
+_get_running_jobid() {
+    local index=$1
+    local jobs=($(squeue -h -u $USER -t RUNNING -o "%i" | sed 's/\[.*\]//g'))
+    local n=${#jobs[@]}
+
+    if [[ $index =~ ^-[0-9]+$ ]]; then
+        index=$((n + index))
+    else
+        ((index--))
+    fi
+
+    if [ $index -lt 0 ] || [ $index -ge $n ]; then
+        return 1
+    fi
+
+    job_id="${jobs[$index]}"
+    if [[ "$job_id" == *"_"* ]]; then
+        echo "${job_id%%_*}"
+    else
+        echo "$job_id"
+    fi
+    return 0
+}
+
+
+stail_running() {
+    local jobid=""
+    local type="out"
+    local n_tail="10"
+
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            out|err) type="$1"; shift;;
+            -n) n_tail="$2"; shift 2;;
+            *)
+                if [[ "$1" =~ ^-?[0-9]+$ ]]; then
+                    jobid=$(_get_running_jobid "$1")
+                    if [ -z "$jobid" ]; then
+                        echo "Error: No running job found at index $1" >&2
+                        return 1
+                    fi
+                fi
+                shift;;
+        esac
+    done
+
+    if [ -z "$jobid" ]; then
+        s_running
+        return 0
+    fi
+
+    for potential_path in "./logs/pac_${jobid}_*.${type}" "./slurm_logs/${jobid}.${type}" "slurm-${jobid}.${type}"; do
+        local matching_files=($(ls $potential_path 2>/dev/null))
+        if [ ${#matching_files[@]} -gt 0 ]; then
+            local clean_file=$(echo "${matching_files[0]}" | sed 's/\x1b\[[0-9;]*m//g')
+            echo "Found: $clean_file"
+            tail -n "$n_tail" -f "$clean_file"
+            return 0
+        fi
+    done
+
+    echo "Error: No ${type} files found for running job ${jobid}" >&2
+    return 1
+}
+
+# EOF

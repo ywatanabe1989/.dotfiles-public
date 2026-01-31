@@ -1,0 +1,42 @@
+[user]
+	email = ywatanabe@alumni.u-tokyo.ac.jp
+	name = Yusuke Watanabe
+[core]
+	pager = more
+	editor = emacs
+[color]
+	ui = true
+[init]
+	templatedir = ~/.git-templates
+	defaultBranch = main
+[filter "lfs"]
+	clean = git-lfs clean -- %f
+	smudge = git-lfs smudge -- %f
+	process = git-lfs filter-process
+	required = true
+[pull]
+	rebase = false
+[push]
+	autoSetupRemote = true
+	default = simple
+[safe]
+	directory = /mnt/ubuntu2004/.dotfiles
+[credential]
+	helper = store
+[committer]
+	email = ywatanabe@alumni.u-tokyo.ac.jp
+	name = Yusuke Watanabe
+[alias]
+	st = status -s
+	br = branch
+	co = checkout
+	sw = switch
+	cf = config
+	cm = commit -m
+	a = !git add
+	ac = !git add . && git commit -m
+	lg = log --graph --date=human --decorate=short --pretty=format:\"%Cgreen%h %Creset%cd %Cblue%cn %Cred%d %Creset%s\"
+	unstage = restore --staged
+	last = log -1 HEAD
+
+

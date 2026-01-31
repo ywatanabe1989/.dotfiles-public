@@ -1,0 +1,86 @@
+#!/bin/sh
+# ~/.git-templates/hooks/pre-commit
+# Please locate this file into .git/hooks/pre-commit
+
+git_list_unmerged_files() {
+    git ls-files --unmerged | cut -f2 | sort -u
+}
+
+git_has_merge_conflict() {
+    if [ -f "$1" ]; then
+        grep -q "^<<<<<<< HEAD\|^=======\|^>>>>>>>" "$1"
+    else
+        return 1
+    fi
+}
+
+git_list_conflicted_files() {
+    local conflicted_files=""
+
+    conflicted_files=$(git_list_unmerged_files | while read -r file; do
+        if [ -f "$file" ] && grep -q "^<<<<<<< HEAD\|^=======\|^>>>>>>>" "$file"; then
+            echo "$file"
+        fi
+    done)
+
+    if [ -z "$conflicted_files" ]; then
+        echo "No files have conflicts"
+        return 0
+    else
+        echo "Unresolved files:"
+        echo "$conflicted_files"
+        return 1
+    fi
+}
+
+git_prevent_conflict_commit() {
+    if git_list_conflicted_files; then
+        exit 0
+    else
+        echo "Error: You have unresolved conflicts. Please resolve them before committing."
+        exit 1
+    fi
+}
+
+get_size_limits() {
+    hard_limit=$(git config hooks.filesizehardlimit)
+    soft_limit=$(git config hooks.filesizesoftlimit)
+    : ${hard_limit:=10000000}
+    : ${soft_limit:=500000}
+}
+
+list_new_or_modified_files() {
+    git diff --staged --name-status | sed -e '/^D/ d; /^D/! s/.\s\+//'
+}
+
+unmunge() {
+    local result="${1#\"}"
+    result="${result%\"}"
+    printf '%b' "$result"
+}
+
+check_file_size() {
+    n=0
+    while read -r munged_filename
+    do
+        f="$(unmunge "$munged_filename")"
+        h=$(git ls-files -s "$f" | cut -d' ' -f 2)
+        s=$(git cat-file -s "$h")
+        if [ "$s" -gt $hard_limit ]; then
+            printf 'ERROR: hard size limit (%d) exceeded: %s (%d)\n' "$hard_limit" "$munged_filename" "$s" >&2
+            n=$((n+1))
+        elif [ "$s" -gt $soft_limit ]; then
+            printf 'WARNING: soft size limit (%d) exceeded: %s (%d)\n' "$soft_limit" "$munged_filename" "$s" >&2
+        fi
+    done
+
+    [ $n -eq 0 ]
+}
+
+main() {
+    git_prevent_conflict_commit
+    get_size_limits
+    list_new_or_modified_files | check_file_size
+}
+
+main

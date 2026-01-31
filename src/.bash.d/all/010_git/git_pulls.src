@@ -1,0 +1,20 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2025-03-06 12:46:52 (ywatanabe)"
+# File: /home/ywatanabe/.dotfiles/.bash.d/all/030_git/git_pulls.src
+
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+pulls() {
+    clear
+
+    if [ -d $HOME/.dotfiles ]; then
+        echo_eval "cd $HOME/.dotfiles && git pull"
+    fi
+
+    if [ -d $HOME/proj/SciTeX-Code/ ]; then
+        echo_eval "cd $HOME/proj/SciTeX-Code/ && git pull"
+    fi
+}
+
+# EOF

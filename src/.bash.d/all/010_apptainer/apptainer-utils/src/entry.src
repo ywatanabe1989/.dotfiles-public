@@ -1,0 +1,28 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2025-03-08 12:24:02 (ywatanabe)"
+# File: /home/ywatanabe/.dotfiles/.bash.d/all/010_apptainer/apptainer-utils/src/entry.src
+
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Source all component files
+source "$THIS_DIR/000_envs_user.at.src"
+source "$THIS_DIR/000_envs_apptainer.at.src"
+source "$THIS_DIR/001_utils.at.src"
+source "$THIS_DIR/001_mkdirs.at.src"
+source "$THIS_DIR/002_dev.at.src"
+
+source "$THIS_DIR/005_build_between_containers.at.src"
+source "$THIS_DIR/005_build_from_def.at.src"
+source "$THIS_DIR/006_shell_sandbox_global.at.src"
+source "$THIS_DIR/006_shell_sandbox_local.at.src"
+source "$THIS_DIR/006_shell_static_global.at.src"
+source "$THIS_DIR/006_shell_static_local.at.src"
+source "$THIS_DIR/007_exec_sandbox_global.at.src"
+source "$THIS_DIR/007_exec_sandbox_local.sh_.at.src"
+source "$THIS_DIR/007_exec_static_global.at.src"
+source "$THIS_DIR/007_exec_static_local.at.src"
+source "$THIS_DIR/008_run_sandbox_global.at.src"
+source "$THIS_DIR/008_run_sandbox_local.at.src"
+
+# EOF

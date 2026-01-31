@@ -1,0 +1,27 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2025-05-12 12:48:12 (ywatanabe)"
+# File: /home/ywatanabe/.bash.d/all/010_cheat.src
+
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# ---------------------------------------
+
+function generate_cheat_aliases() {
+    local cheat_dir="$HOME/proj/cheat"
+
+    # Check if directory exists
+    [[ ! -d "$cheat_dir" ]] && return
+
+    # Find all .md files and create aliases
+    while IFS= read -r file; do
+        local alias_name="ct_$(basename "$file" .md | tr '-' '_')"
+        alias "${alias_name}"="cat '$file'"
+    done < <(find "$cheat_dir" -type f -name "*.md")
+
+    elias list_cheat_sheets
+}
+
+# Execute function
+generate_cheat_aliases
+
+# EOF

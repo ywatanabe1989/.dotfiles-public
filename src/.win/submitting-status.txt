@@ -1,0 +1,27 @@
+Every 1.0s: bash -c _list_jobs                                                                                                                                                    spartan-login2.hpc.unimelb.edu.au: Fri Jul 11 05:51:57 2025
+IDX  JOBID            NAME       ST   NODES NODELIST(REASON)     TRES_PER_NODE   CPU MIN_MEM TIME_LIMIT  TIME_LEFT
+--------------------------------------------------------------------------------------------------
+[1]  12696927         pac_calc_random_8_chain5 PD   1     (Dependency)         gres/gpu:1      4   32G     4:00:00     4:00:00
+[2]  12696926         pac_calc_random_8_chain4 PD   1     (Dependency)         gres/gpu:1      4   32G     4:00:00     4:00:00
+[3]  12696925         pac_calc_random_8_chain3 PD   1     (Dependency)         gres/gpu:1      4   32G     4:00:00     4:00:00
+[4]  12696924         pac_calc_random_8_chain2 PD   1     (Dependency)         gres/gpu:1      4   32G     4:00:00     4:00:00
+[5]  12696923         pac_calc_random_8_chain1 PD   1     (Dependency)         gres/gpu:1      4   32G     4:00:00     4:00:00
+[6]  12696922         pac_calc_random_8 PD   1     (Priority)           gres/gpu:1      4   32G     4:00:00     4:00:00
+[7]  12696921         pac_calc_random_7_chain5 PD   1     (Dependency)         gres/gpu:1      4   32G     4:00:00     4:00:00
+[8]  12696920         pac_calc_random_7_chain4 PD   1     (Dependency)         gres/gpu:1      4   32G     4:00:00     4:00:00
+[9]  12696919         pac_calc_random_7_chain3 PD   1     (Dependency)         gres/gpu:1      4   32G     4:00:00     4:00:00
+[10] 12696918         pac_calc_random_7_chain2 PD   1     (Dependency)         gres/gpu:1      4   32G     4:00:00     4:00:00
+[11] 12696917         pac_calc_random_7_chain1 PD   1     (Dependency)         gres/gpu:1      4   32G     4:00:00     4:00:00
+[12] 12696916         pac_calc_random_7 PD   1     (Priority)           gres/gpu:1      4   32G     4:00:00     4:00:00
+[13] 12696915         pac_calc_random_6_chain5 PD   1     (Dependency)         gres/gpu:1      4   32G     4:00:00     4:00:00
+[14] 12696914         pac_calc_random_6_chain4 PD   1     (Dependency)         gres/gpu:1      4   32G     4:00:00     4:00:00
+[15] 12696913         pac_calc_random_6_chain3 PD   1     (Dependency)         gres/gpu:1      4   32G     4:00:00     4:00:00
+[16] 12696912         pac_calc_random_6_chain2 PD   1     (Dependency)         gres/gpu:1      4   32G     4:00:00     4:00:00
+[17] 12696911         pac_calc_random_6_chain1 PD   1     (Dependency)         gres/gpu:1      4   32G     4:00:00     4:00:00
+[18] 12696910         pac_calc_random_6 PD   1     (Priority)           gres/gpu:1      4   32G     4:00:00     4:00:00
+[19] 12696909         pac_calc_random_5_chain5 PD   1     (Dependency)         gres/gpu:1      4   32G     4:00:00     4:00:00
+[20] 12696908         pac_calc_random_5_chain4 PD   1     (Dependency)         gres/gpu:1      4   32G     4:00:00     4:00:00
+[21] 12696907         pac_calc_random_5_chain3 PD   1     (Dependency)         gres/gpu:1      4   32G     4:00:00     4:00:00
+[22] 12696906         pac_calc_random_5_chain2 PD   1     (Dependency)         gres/gpu:1      4   32G     4:00:00     4:00:00
+[23] 12696905         pac_calc_random_5_chain1 PD   1     (Dependency)         gres/gpu:1      4   32G     4:00:00     4:00:00
+[24] 12696904         pac_calc_random_5 PD   1     (Priority)           gres/gpu:1      4   32G     4:00:00     4:00:00

@@ -1,0 +1,24 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# Timestamp: "2025-09-16 16:58:54 (ywatanabe)"
+# File: /ssh:sp:/home/ywatanabe/.bash.d/all/010_slurm/sclean.src
+
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# ---------------------------------------
+
+sclean() {
+    # Clean SLURM log files from current and slurm_logs directories
+    # Example: sclean_logs
+
+    directories=("." "./slurm_logs")
+
+    for dir in "${directories[@]}"; do
+        if [[ -d "$dir" ]]; then
+            rm -f "$dir"/*.out
+            rm -f "$dir"/*.err
+            echo "Cleaned logs from: $dir"
+        fi
+    done
+}
+
+# EOF
